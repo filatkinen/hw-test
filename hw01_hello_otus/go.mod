@@ -1,4 +1,4 @@
-module github.com/filatkinen/hw-test/tree/master/hw01_hello_otus
+module github.com/filatkinen/hw-test/hw01_hello_otus
 
 go 1.19
 
