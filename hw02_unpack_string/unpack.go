@@ -9,18 +9,12 @@ var ErrInvalidString = errors.New("invalid string")
 
 // check if char == 0.
 func isCharZero(char rune) bool {
-	if char == 48 { //nolint:gosimple
-		return true
-	}
-	return false
+	return char == '0'
 }
 
 // check if char from 1 to 9.
 func isCharDigit(char rune) bool {
-	if char > 48 && char < 58 {
-		return true
-	}
-	return false
+	return char >= '1' && char <= '9'
 }
 
 func Unpack(inputString string) (string, error) {
@@ -55,16 +49,16 @@ func Unpack(inputString string) (string, error) {
 		}
 
 		switch {
-		case prevChar == 92 && char == 110: // find if "\n" is in the string
+		case prevChar == 'n' && char == '\\': // find if "\n" is in the string
 			return "", ErrInvalidString
-		case prevChar == 92 && !wasSlash: // find if "\" is in the string and was not slash before
+		case prevChar == '\\' && !wasSlash: // find if "\" is in the string and was not slash before
 			prevChar = char
 			wasSlash = true
 		case isCharZero(char): // find if char is 0, so we are not  writing prevChar to result
 			prevChar = char
 			skipLoop = true
 		case isCharDigit(char): // find if this char is digit-> add to result "previous char digit-1 copies"
-			for i := 0; i < int(char)-48; i++ {
+			for i := 0; i < int(char)-'0'; i++ {
 				resultString.WriteRune(prevChar)
 			}
 			prevChar = char
