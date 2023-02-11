@@ -10,7 +10,7 @@ type wordsCount struct {
 	count int
 }
 
-const TaskWithAsteriskIsCompleted = false
+const TaskWithAsteriskIsCompleted = true
 
 // Transform to lowercase for Latin and Russian alphabets using pointer to avoid excessive coping.
 func toLower(ch *rune) {
