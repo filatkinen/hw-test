@@ -7,7 +7,6 @@ import (
 )
 
 // Change to true if needed.
-var taskWithAsteriskIsCompleted = TaskWithAsteriskIsCompleted
 
 var text = `Как видите, он  спускается  по  лестнице  вслед  за  своим
 	другом   Кристофером   Робином,   головой   вниз,  пересчитывая
@@ -45,38 +44,73 @@ var text = `Как видите, он  спускается  по  лестни�
 
 func TestTop10(t *testing.T) {
 	t.Run("no words in empty string", func(t *testing.T) {
-		require.Len(t, Top10(""), 0)
+		require.Len(t, Top10("", false), 0)
 	})
 
-	t.Run("positive test", func(t *testing.T) {
-		if taskWithAsteriskIsCompleted {
-			expected := []string{
-				"а",         // 8
-				"он",        // 8
-				"и",         // 6
-				"ты",        // 5
-				"что",       // 5
-				"в",         // 4
-				"его",       // 4
-				"если",      // 4
-				"кристофер", // 4
-				"не",        // 4
-			}
-			require.Equal(t, expected, Top10(text))
-		} else {
-			expected := []string{
-				"он",        // 8
-				"а",         // 6
-				"и",         // 6
-				"ты",        // 5
-				"что",       // 5
-				"-",         // 4
-				"Кристофер", // 4
-				"если",      // 4
-				"не",        // 4
-				"то",        // 4
-			}
-			require.Equal(t, expected, Top10(text))
+	t.Run("positive test with asterisk", func(t *testing.T) {
+		expected := []string{
+			"а",         // 8
+			"он",        // 8
+			"и",         // 6
+			"ты",        // 5
+			"что",       // 5
+			"в",         // 4
+			"его",       // 4
+			"если",      // 4
+			"кристофер", // 4
+			"не",        // 4
 		}
+		require.Equal(t, expected, Top10(text, true))
+	})
+	t.Run("positive test without asterisk", func(t *testing.T) {
+		expected := []string{
+			"он",        // 8
+			"а",         // 6
+			"и",         // 6
+			"ты",        // 5
+			"что",       // 5
+			"-",         // 4
+			"Кристофер", // 4
+			"если",      // 4
+			"не",        // 4
+			"то",        // 4
+		}
+		require.Equal(t, expected, Top10(text, false))
+	})
+}
+
+func TestTop10Additions(t *testing.T) {
+	t.Run("TestAdd01", func(t *testing.T) {
+		txt := `{} ! . - ]///`
+		expected := []string{}
+		require.Equal(t, expected, Top10(txt, true))
+	})
+	t.Run("TestAdd02", func(t *testing.T) {
+		txt := `        Он она она          так так так и и и и -`
+		expected := []string{
+			"и",   // 4
+			"так", // 3
+			"она", // 2
+			"он",  // 1
+		}
+		require.Equal(t, expected, Top10(txt, true))
+	})
+	t.Run("TestAdd03", func(t *testing.T) {
+		txt := `Он      она он она как и так и       так и так`
+		expected := []string{
+			"и",   // 3
+			"так", // 3
+			"он",  // 2
+			"она", // 2
+			"как", // 1
+		}
+		require.Equal(t, expected, Top10(txt, true))
+	})
+	t.Run("TestAdd04", func(t *testing.T) {
+		txt := `и -`
+		expected := []string{
+			"и", // 1
+		}
+		require.Equal(t, expected, Top10(txt, true))
 	})
 }
