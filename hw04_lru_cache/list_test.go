@@ -48,3 +48,46 @@ func TestList(t *testing.T) {
 		require.Equal(t, []int{70, 80, 60, 40, 10, 30, 50}, elems)
 	})
 }
+
+func TestListAdditional(t *testing.T) {
+	t.Run("Add 10 elements Front->check 10 elements; Delete 10 elements-check the lst is zero", func(t *testing.T) {
+		l := NewList()
+		for i := 0; i < 10; i++ {
+			l.PushFront(i)
+		}
+		require.Equal(t, 10, l.Len())
+
+		p := l.Back()
+		for i := 0; i < 10; i++ {
+			require.Equal(t, i, p.Value)
+			p = p.Prev
+		}
+
+		for i := 0; i < 10; i++ {
+			l.Remove(l.Front())
+		}
+		require.Equal(t, 0, l.Len())
+		require.Nil(t, l.Front())
+		require.Nil(t, l.Back())
+	})
+	t.Run("Add 10 elements Back->check 10 elements; Delete 10 elements-check the lst is zero", func(t *testing.T) {
+		l := NewList()
+		for i := 0; i < 10; i++ {
+			l.PushBack(i)
+		}
+		require.Equal(t, 10, l.Len())
+
+		p := l.Back()
+		for i := 9; i >= 0; i-- {
+			require.Equal(t, i, p.Value)
+			p = p.Prev
+		}
+
+		for i := 0; i < 10; i++ {
+			l.Remove(l.Back())
+		}
+		require.Equal(t, 0, l.Len())
+		require.Nil(t, l.Front())
+		require.Nil(t, l.Back())
+	})
+}
