@@ -53,10 +53,14 @@ func (s *lruCache) Get(key Key) (value any, inCache bool) {
 }
 
 func (s *lruCache) Clear() Cache {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	return NewCache(s.capacity)
 }
 
 func (s *lruCache) Len() int {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	return s.queue.Len()
 }
 
