@@ -18,84 +18,82 @@ type ResultTask struct {
 	countError   int
 }
 
+func runWorker(task <-chan Task, cancel <-chan struct{}, resul chan<- error, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for {
+		select {
+		case <-cancel:
+			return
+		default:
+			select {
+			case t, ok := <-task:
+				if ok {
+					resul <- t()
+				} else {
+					return
+				}
+			case <-cancel:
+				return
+			}
+		}
+	}
+}
+
 // Run starts tasks in n goroutines and stops its work when receiving m errors from tasks.
-func Run(tasks []Task, n, m int) (resultFunc ResultTask, err error) {
+func Run(tasks []Task, n, m int) (result ResultTask, err error) {
 	if n < 1 {
-		return resultFunc, ErrErrorsWorkerHasBePositive
+		return result, ErrErrorsWorkerHasBePositive
 	}
 	if m < 0 {
 		m = 0
 	}
-	countError := 0
-	countSuccess := 0
-	cancelChan := make(chan struct{})
-	resultChan := make(chan error, n)
 
-	// Send tasks to chan  with buffer length=min(len(tasks),n)
-	taskBufferSize := len(tasks)
-	if taskBufferSize > n {
-		taskBufferSize = n
-	}
-	countSendTask := taskBufferSize
-	taskChan := make(chan Task, taskBufferSize)
-	for i := 0; i < taskBufferSize; i++ {
-		taskChan <- tasks[i]
-	}
+	cancelChanWorkers := make(chan struct{})
+	resultChan := make(chan error)
+	taskChan := make(chan Task, len(tasks))
 
 	// Starting "n" handlers
-	wg := sync.WaitGroup{}
-	wg.Add(n)
+	wgWorker := sync.WaitGroup{}
+	wgWorker.Add(n)
 	for i := 0; i < n; i++ {
-		go func() {
-			defer wg.Done()
-			for {
-				select {
-				case t := <-taskChan:
-					resultChan <- t()
-				case <-cancelChan:
-					return
+		go runWorker(taskChan, cancelChanWorkers, resultChan, &wgWorker)
+	}
+
+	// Send all the tasks to the chanel for workers.
+	// They send back result to the channel without buffer, so we control them by result channel.
+	for i := 0; i < len(tasks); i++ {
+		taskChan <- tasks[i]
+	}
+	close(taskChan)
+
+	// Starting resulting worker to receive results
+	wgResult := sync.WaitGroup{}
+	wgResult.Add(1)
+	go func() {
+		defer wgResult.Done()
+		once := sync.Once{}
+		for r := range resultChan {
+			if r != nil {
+				err = fmt.Errorf(" %w", r)
+				result.countError++
+				if result.countError >= m {
+					once.Do(func() { close(cancelChanWorkers) })
 				}
-			}
-		}()
-	}
-
-	funcCountResult := func(result error) {
-		if result != nil {
-			if err != nil {
-				err = fmt.Errorf(" %w", result)
 			} else {
-				err = result
+				result.countSuccess++
 			}
-			countError++
-		} else {
-			countSuccess++
 		}
-	}
+	}()
 
-	for result := range resultChan {
-		funcCountResult(result)
-		tasksLeft := len(tasks) - countSendTask
-		if !(countError > m) && tasksLeft > 0 {
-			countSendTask++
-			taskChan <- tasks[countSendTask-1]
-		} else {
-			close(cancelChan)
-			break
-		}
-	}
-
-	wg.Wait()
+	// Waiting till all the workers closed.
+	wgWorker.Wait()
+	// Close resultChan to stop result worker.
 	close(resultChan)
+	// Waiting till result worker closed.
+	wgResult.Wait()
 
-	for result := range resultChan {
-		funcCountResult(result)
-	}
-
-	if countError > m {
+	if result.countError > m {
 		err = fmt.Errorf(" %w", ErrErrorsLimitExceeded)
 	}
-	resultFunc.countError = countError
-	resultFunc.countSuccess = countSuccess
-
-	return resultFunc, err
+	return result, err
 }
