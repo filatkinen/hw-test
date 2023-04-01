@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 )
@@ -13,9 +14,15 @@ var (
 )
 
 func Copy(fromPath, toPath string, offset, limit int64) error {
-	if fromPath == toPath {
-		return errors.New("sorce file equal destination")
+	sstat, err := os.Stat(fromPath)
+	if err != nil {
+		return err
 	}
+	dstat, err := os.Stat(toPath)
+	if err == nil && os.SameFile(sstat, dstat) {
+		return fmt.Errorf("files in parameters fromPath=%s and toPath=%s are equal", fromPath, toPath)
+	}
+
 	src, err := os.Open(fromPath)
 	if err != nil {
 		return err
