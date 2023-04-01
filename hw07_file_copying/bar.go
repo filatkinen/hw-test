@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -13,6 +15,11 @@ type Bar struct {
 	rate    string
 	prefix  string
 	shift   int
+}
+
+type Reader struct {
+	io.Reader
+	bar *Bar
 }
 
 func NewBar(size int64) *Bar {
@@ -32,6 +39,20 @@ func NewBar(size int64) *Bar {
 		bar.shift = 30
 	}
 	return &bar
+}
+
+func (bar *Bar) NewBarProxyReader(r io.Reader) *Reader {
+	return &Reader{r, bar}
+}
+
+func (r *Reader) Read(p []byte) (n int, err error) {
+	n, err = r.Reader.Read(p)
+	r.bar.cur += int64(n)
+	r.bar.ShowProgress(r.bar.cur)
+	if errors.Is(err, io.EOF) {
+		r.bar.Finish()
+	}
+	return
 }
 
 func (bar *Bar) ShowProgress(cur int64) {

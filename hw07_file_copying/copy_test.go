@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"testing"
 
@@ -13,32 +14,43 @@ const tofile = "testdata/out.txt"
 func TestCopy(t *testing.T) {
 	from := "testdata/input.txt"
 	src, err := os.Open(from)
-	if err != nil {
-		t.Error("Failed to read testing file")
-	}
+	require.NoError(t, err)
 	fi, _ := src.Stat()
 	ifsize := fi.Size()
 	bufin := make([]byte, ifsize)
 	bufout := make([]byte, ifsize)
 	src.Close()
 
-	for _, v := range []int64{1, 10, 100, 1000} {
+	for _, v := range []int64{0, 1, 10, 100, 1000} {
 		t.Run(fmt.Sprintf("App call test with offset=%d and limit=%d", v, v), func(t *testing.T) {
 			err := Copy(from, tofile, v, v)
-			require.Nil(t, err)
+			require.NoError(t, err)
+
 			src, err := os.Open(from)
-			if err != nil {
-				t.Errorf("Failed to open in file %s in test with offset=%d and limit=%d", tofile, v, v)
-			}
+			require.NoError(t, err)
 			defer src.Close()
+
 			dst, err := os.Open(tofile)
-			if err != nil {
-				t.Errorf("Failed to open out file %s in test with offset=%d and limit=%d", tofile, v, v)
-			}
+			require.NoError(t, err)
 			defer dst.Close()
-			src.ReadAt(bufin, v)
-			n, _ := dst.Read(bufout)
-			for i := 0; i < n; i++ {
+
+			if v > 0 {
+				_, err = src.Seek(v, io.SeekStart)
+				if err != nil {
+					t.Errorf(err.Error())
+				}
+			}
+
+			var rd io.Reader
+			if v > 0 {
+				rd = io.LimitReader(src, v)
+			} else {
+				rd = io.Reader(src)
+			}
+			nread, _ := rd.Read(bufin)
+			nwrite, _ := dst.Read(bufout)
+			require.Equal(t, nread, nwrite)
+			for i := 0; i < nwrite; i++ {
 				require.Equal(t, bufin[i], bufout[i], "in position ", i)
 			}
 		})
@@ -49,9 +61,7 @@ func TestCopy(t *testing.T) {
 func TestParams(t *testing.T) {
 	from := "testdata/input.txt"
 	src, err := os.Open(from)
-	if err != nil {
-		t.Error("Failed to read testing file")
-	}
+	require.NoError(t, err)
 	fi, _ := src.Stat()
 	ifsize := fi.Size()
 	t.Run("offset больше, чем размер файла - невалидная ситуация", func(t *testing.T) {

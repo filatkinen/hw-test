@@ -1,10 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"io"
 	"os"
-	"time"
 )
 
 var (
@@ -13,6 +13,9 @@ var (
 )
 
 func Copy(fromPath, toPath string, offset, limit int64) error {
+	if fromPath == toPath {
+		return errors.New("sorce file equal destination")
+	}
 	src, err := os.Open(fromPath)
 	if err != nil {
 		return err
@@ -44,49 +47,25 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		}
 	}
 
-	buf := make([]byte, 1<<15)
-
-	var barsize int64
-	switch {
-	case offset+limit > srcsize:
-		barsize = srcsize - offset
-	case limit > 0:
+	var rd io.Reader
+	if limit > 0 {
+		rd = io.LimitReader(src, limit)
+	} else {
+		rd = io.Reader(src)
+	}
+	barsize := srcsize - offset
+	if limit > 0 && srcsize-offset > limit {
 		barsize = limit
-	default:
-		barsize = srcsize - offset
 	}
 	bar := NewBar(barsize)
+	rdbar := bar.NewBarProxyReader(rd)
 
-	ticker := time.NewTicker(30 * time.Millisecond)
+	wt := bufio.NewWriter(dst)
 
-	rbytes := int64(0)
-	wbytes := int64(0)
-	for {
-		n, err := src.Read(buf)
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return err
-		}
-		rbytes += int64(n)
-		if limit != 0 && rbytes >= limit {
-			n, err = dst.Write(buf[:n-int(rbytes-limit)])
-		} else {
-			n, err = dst.Write(buf[:n])
-		}
-		if err != nil {
-			return err
-		}
-		wbytes += int64(n)
-		select {
-		case <-ticker.C:
-			bar.ShowProgress(wbytes)
-		default:
-		}
+	_, err = io.Copy(wt, rdbar)
+	if err != nil {
+		return err
 	}
-	bar.ShowProgress(wbytes)
-	bar.Finish()
 
 	if err := src.Close(); err != nil {
 		return err
