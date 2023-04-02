@@ -29,12 +29,8 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	}
 	defer src.Close()
 
-	fi, err := src.Stat()
-	if err != nil {
-		return err
-	}
-	srcsize := fi.Size()
-	if srcsize == 0 || fi.IsDir() {
+	srcsize := sstat.Size()
+	if srcsize == 0 || sstat.IsDir() {
 		return ErrUnsupportedFile
 	}
 	if offset >= srcsize {
@@ -73,9 +69,5 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	if err != nil {
 		return err
 	}
-
-	if err := src.Close(); err != nil {
-		return err
-	}
-	return dst.Close()
+	return nil
 }
