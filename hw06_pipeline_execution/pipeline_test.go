@@ -91,3 +91,80 @@ func TestPipeline(t *testing.T) {
 		require.Less(t, int64(elapsed), int64(abortDur)+int64(fault))
 	})
 }
+
+func TestPipelineAdd(t *testing.T) {
+	// Stage generator
+	g := func(_ string, delay time.Duration, f func(v interface{}) interface{}) Stage {
+		return func(in In) Out {
+			out := make(Bi)
+			go func() {
+				defer close(out)
+				for v := range in {
+					if delay > 0 {
+						time.Sleep(delay)
+					}
+					out <- f(v)
+				}
+			}()
+			return out
+		}
+	}
+
+	t.Run("Stress 1000 values for 1000 functions with delay=0", func(t *testing.T) {
+		in := make(Bi)
+
+		funcInPipeLine := 1000
+		dataArray := 1000
+
+		stages := make([]Stage, 0, funcInPipeLine)
+		etalonData := make([]int, 0, dataArray)
+		for i := 0; i < funcInPipeLine; i++ {
+			if i%2 == 0 {
+				stages = append(stages, g("Adder (+3)", time.Millisecond*0, func(v interface{}) interface{} { return v.(int) + 3 }))
+			} else {
+				stages = append(stages, g("Adder (-2)", time.Millisecond*0, func(v interface{}) interface{} { return v.(int) - 2 }))
+			}
+		}
+
+		go func() {
+			for i := 0; i < dataArray; i++ {
+				etalonData = append(etalonData, i+500)
+				in <- i
+			}
+			close(in)
+		}()
+
+		result := make([]int, 0, dataArray)
+		for s := range ExecutePipeline(in, nil, stages...) {
+			result = append(result, s.(int))
+		}
+		require.Equal(t, etalonData, result)
+	})
+
+	t.Run("Time case 100 values 10 functions 100 msec. We are expecting less then 2 seconds ", func(t *testing.T) {
+		in := make(Bi)
+
+		funcInPipeLine := 10
+		dataArray := 100
+		delay := time.Millisecond * 100
+
+		stages := make([]Stage, 0, funcInPipeLine)
+		for i := 0; i < funcInPipeLine; i++ {
+			stages = append(stages, g("Dummy", delay, func(v interface{}) interface{} { return v }))
+		}
+
+		go func() {
+			for i := 0; i < dataArray; i++ {
+				in <- i
+			}
+			close(in)
+		}()
+
+		start := time.Now()
+		for s := range ExecutePipeline(in, nil, stages...) {
+			_ = s
+		}
+		elapsed := time.Since(start)
+		require.Less(t, int64(elapsed), int64(delay)*int64(funcInPipeLine)*2)
+	})
+}
