@@ -14,8 +14,10 @@ func main() {
 	env, err := ReadDir(os.Args[1])
 	if errors.Is(err, ErrOpenDirectory) {
 		fmt.Println("Bad directory with env variables")
+		os.Exit(1)
 	} else if err != nil {
 		fmt.Println(err.Error())
+		os.Exit(1)
 	}
-	_ = RunCmd(os.Args[2:], env)
+	os.Exit(RunCmd(os.Args[2:], env))
 }
