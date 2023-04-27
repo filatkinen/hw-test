@@ -42,16 +42,17 @@ func Validate(v interface{}) error {
 		val = val.Elem()
 	}
 	if val.Kind() != reflect.Struct {
-		return fmt.Errorf("%w", ErrorNotStructure)
+		return ErrorNotStructure
 	}
 	tval := val.Type()
 	for i := 0; i < tval.NumField(); i++ {
 		ft := tval.Field(i)
 		fv := val.Field(i)
-		if e := validateElem(ft, fv); e != nil {
+		e := validateElem(ft, fv)
+		for _, er := range e {
 			valerr = append(valerr, ValidationError{
 				Field: ft.Name,
-				Err:   e,
+				Err:   er,
 			})
 		}
 	}
@@ -61,7 +62,7 @@ func Validate(v interface{}) error {
 	return valerr
 }
 
-func validateElem(ft reflect.StructField, fv reflect.Value) (e error) {
+func validateElem(ft reflect.StructField, fv reflect.Value) (errslice []error) { //nolint
 	if ft.Tag == "" || fv.IsZero() {
 		return nil
 	}
@@ -74,26 +75,36 @@ func validateElem(ft reflect.StructField, fv reflect.Value) (e error) {
 	}
 	switch fv.Kind() { //nolint
 	case reflect.Int, reflect.Uint8, reflect.Int32, reflect.Int64:
-		e = validateValue(fv.Int(), tag)
+		if e := validateValue(fv.Int(), tag); e != nil {
+			errslice = append(errslice, e)
+		}
 	case reflect.String:
-		e = validateValue(fv.Interface(), tag)
+		if e := validateValue(fv.Interface(), tag); e != nil {
+			errslice = append(errslice, e)
+		}
 	case reflect.Slice:
 		switch t := fv.Interface().(type) {
 		case []string:
 			for _, value := range t {
-				e = wraperrors(e, validateValue(value, tag))
+				if e := validateValue(value, tag); e != nil {
+					errslice = append(errslice, e)
+				}
 			}
 		case []int:
 			for _, value := range t {
-				e = wraperrors(e, validateValue(int64(value), tag))
+				if e := validateValue(int64(value), tag); e != nil {
+					errslice = append(errslice, e)
+				}
 			}
 		case []byte:
 			for _, value := range t {
-				e = wraperrors(e, validateValue(int64(value), tag))
+				if e := validateValue(int64(value), tag); e != nil {
+					errslice = append(errslice, e)
+				}
 			}
 		}
 	}
-	return e
+	return errslice
 }
 
 func wraperrors(err1, err2 error) error {
@@ -145,14 +156,13 @@ func parseTag(tag string) ([]Tag, error) {
 	tags := strings.Split(tag, "|")
 	for _, v := range tags {
 		val := strings.SplitN(v, ":", 2)
-		if len(val) == 2 {
-			slicetag = append(slicetag, Tag{
-				tagname: val[0],
-				tagval:  val[1],
-			})
-		} else {
+		if len(val) != 2 {
 			return []Tag{}, ErrorParsValidateTag
 		}
+		slicetag = append(slicetag, Tag{
+			tagname: val[0],
+			tagval:  val[1],
+		})
 	}
 
 	return slicetag, nil

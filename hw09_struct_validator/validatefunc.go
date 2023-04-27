@@ -12,15 +12,15 @@ type (
 	TagInt    Tag
 )
 
-func in(tagval, val string) (bool, error) {
+func in(tagval, val string) error {
 	slice := strings.Split(tagval, ",")
 	for _, v := range slice {
 		v = strings.TrimSpace(v)
 		if v == val {
-			return true, nil
+			return nil
 		}
 	}
-	return false, ErrorValidation
+	return ErrorValidation
 }
 
 func (t *TagInt) Call(val int) (bool, error) {
@@ -56,7 +56,11 @@ func (t *TagInt) Max(val int) (bool, error) {
 }
 
 func (t *TagInt) In(val int) (bool, error) {
-	return in(t.tagval, strconv.Itoa(val))
+	result := in(t.tagval, strconv.Itoa(val))
+	if result != nil {
+		return false, result
+	}
+	return true, nil
 }
 
 func (t *TagString) Call(val string) (bool, error) {
@@ -84,7 +88,11 @@ func (t *TagString) Len(val string) (bool, error) {
 }
 
 func (t *TagString) In(val string) (bool, error) {
-	return in(t.tagval, val)
+	result := in(t.tagval, val)
+	if result != nil {
+		return false, result
+	}
+	return true, nil
 }
 
 func (t *TagString) Regexp(val string) (bool, error) {

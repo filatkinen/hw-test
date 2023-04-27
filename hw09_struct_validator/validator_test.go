@@ -74,7 +74,7 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			in: Token{
-				Header:    []byte{7, 19, 100},
+				Header:    []byte{7, 19, 49},
 				Payload:   []byte{23, 89},
 				Signature: []byte{64},
 			},
