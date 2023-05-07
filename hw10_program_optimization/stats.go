@@ -1,10 +1,9 @@
 package hw10programoptimization
 
 import (
-	"encoding/json"
-	"fmt"
+	"bufio"
 	"io"
-	"regexp"
+	"log"
 	"strings"
 )
 
@@ -21,45 +20,62 @@ type User struct {
 type DomainStat map[string]int
 
 func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
-	u, err := getUsers(r)
-	if err != nil {
-		return nil, fmt.Errorf("get users error: %w", err)
-	}
+	u := getUsers(r)
 	return countDomains(u, domain)
 }
 
-type users [100_000]User
-
-func getUsers(r io.Reader) (result users, err error) {
-	content, err := io.ReadAll(r)
-	if err != nil {
-		return
-	}
-
-	lines := strings.Split(string(content), "\n")
-	for i, line := range lines {
-		var user User
-		if err = json.Unmarshal([]byte(line), &user); err != nil {
-			return
-		}
-		result[i] = user
-	}
-	return
+type usersChan struct {
+	userRecord User
+	err        error
 }
 
-func countDomains(u users, domain string) (DomainStat, error) {
-	result := make(DomainStat)
-
-	for _, user := range u {
-		matched, err := regexp.Match("\\."+domain, []byte(user.Email))
-		if err != nil {
-			return nil, err
+func getUsers(r io.Reader) chan usersChan {
+	scanner := bufio.NewScanner(r)
+	c := make(chan usersChan)
+	var user User
+	go func() {
+		defer close(c)
+		for {
+			scanner.Scan()
+			if len(scanner.Bytes()) == 0 {
+				break
+			}
+			e := user.UnmarshalJSON(scanner.Bytes())
+			c <- usersChan{
+				userRecord: user,
+				err:        e,
+			}
 		}
+	}()
+	return c
+}
 
+func countDomains(u chan usersChan, domain string) (DomainStat, error) {
+	result := make(DomainStat)
+	lendomain := len(domain)
+	loop := 0
+	for user := range u {
+		loop++
+		if user.err != nil {
+			log.Printf("error unmarshaling string number=%d, error=%s", loop, user.err)
+		}
+		lenusername := len(user.userRecord.Email)
+		if lendomain >= lenusername {
+			continue
+		}
+		matched := true
+		for i := 0; i < lendomain; i++ {
+			if domain[lendomain-i-1] != user.userRecord.Email[lenusername-i-1] {
+				matched = false
+				break
+			}
+		}
+		if matched && user.userRecord.Email[lenusername-lendomain-1] != '.' {
+			continue
+		}
 		if matched {
-			num := result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])]
-			num++
-			result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])] = num
+			domen := strings.ToLower(strings.SplitN(user.userRecord.Email, "@", 2)[1])
+			result[domen]++
 		}
 	}
 	return result, nil
