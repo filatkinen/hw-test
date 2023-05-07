@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"strings"
+	"sync"
 )
 
 type User struct {
@@ -52,31 +53,31 @@ func getUsers(r io.Reader) chan usersChan {
 
 func countDomains(u chan usersChan, domain string) (DomainStat, error) {
 	result := make(DomainStat)
+	wg := sync.WaitGroup{}
+	const threads = 4
+	wg.Add(threads)
+	mtx := sync.Mutex{}
 	lendomain := len(domain)
-	loop := 0
-	for user := range u {
-		loop++
-		if user.err != nil {
-			log.Printf("error unmarshaling string number=%d, error=%s", loop, user.err)
-		}
-		lenusername := len(user.userRecord.Email)
-		if lendomain >= lenusername {
-			continue
-		}
-		matched := true
-		for i := 0; i < lendomain; i++ {
-			if domain[lendomain-i-1] != user.userRecord.Email[lenusername-i-1] {
-				matched = false
-				break
+	domencount := func() {
+		defer wg.Done()
+		for user := range u {
+			if user.err != nil {
+				log.Printf("error unmarshaling string: %s", user.err)
+				continue
+			}
+			if user.userRecord.Email[len(user.userRecord.Email)-lendomain:] == domain &&
+				user.userRecord.Email[len(user.userRecord.Email)-lendomain-1] == '.' {
+				domen := strings.ToLower(strings.SplitN(user.userRecord.Email, "@", 2)[1])
+				mtx.Lock()
+				result[domen]++
+				mtx.Unlock()
 			}
 		}
-		if matched && user.userRecord.Email[lenusername-lendomain-1] != '.' {
-			continue
-		}
-		if matched {
-			domen := strings.ToLower(strings.SplitN(user.userRecord.Email, "@", 2)[1])
-			result[domen]++
-		}
 	}
+	for i := 0; i < threads; i++ {
+		domencount()
+	}
+	wg.Wait()
+
 	return result, nil
 }
