@@ -1,0 +1,16 @@
+goos: linux
+goarch: amd64
+pkg: github.com/filatkinen/hw-test/hw10_program_optimization
+cpu: AMD Ryzen 7 5800H with Radeon Graphics         
+BenchmarkGetDomainStatRecords-16    	      10	 115563381 ns/op	136045864 B/op	 1700081 allocs/op
+BenchmarkGetDomainStatRecords-16    	       9	 119162639 ns/op	136045866 B/op	 1700080 allocs/op
+BenchmarkGetDomainStatRecords-16    	       8	 125457638 ns/op	136045808 B/op	 1700080 allocs/op
+BenchmarkGetDomainStatRecords-16    	       9	 127597342 ns/op	136045776 B/op	 1700080 allocs/op
+BenchmarkGetDomainStatRecords-16    	       8	 127453354 ns/op	136045832 B/op	 1700080 allocs/op
+BenchmarkGetDomainStatRecords-16    	       8	 125718354 ns/op	136045820 B/op	 1700080 allocs/op
+BenchmarkGetDomainStatRecords-16    	       9	 114814054 ns/op	136045861 B/op	 1700080 allocs/op
+BenchmarkGetDomainStatRecords-16    	       9	 119317145 ns/op	136045829 B/op	 1700080 allocs/op
+BenchmarkGetDomainStatRecords-16    	      10	 114258527 ns/op	136045862 B/op	 1700080 allocs/op
+BenchmarkGetDomainStatRecords-16    	       9	 119286079 ns/op	136045834 B/op	 1700080 allocs/op
+PASS
+ok  	github.com/filatkinen/hw-test/hw10_program_optimization	15.681s

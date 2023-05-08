@@ -1,0 +1,15 @@
+goos: linux
+goarch: amd64
+pkg: github.com/filatkinen/hw-test/hw10_program_optimization
+cpu: AMD Ryzen 7 5800H with Radeon Graphics         
+                        │     old.txt     │               new.txt               │
+                        │     sec/op      │   sec/op     vs base                │
+GetDomainStatRecords-16   119301.61µ ± 7%   11.67µ ± 7%  -99.99% (p=0.000 n=10)
+
+                        │      old.txt      │                new.txt                │
+                        │       B/op        │     B/op      vs base                 │
+GetDomainStatRecords-16   132857.259Ki ± 0%   6.148Ki ± 0%  -100.00% (p=0.000 n=10)
+
+                        │     old.txt     │               new.txt               │
+                        │    allocs/op    │ allocs/op   vs base                 │
+GetDomainStatRecords-16   1700080.00 ± 0%   45.00 ± 0%  -100.00% (p=0.000 n=10)

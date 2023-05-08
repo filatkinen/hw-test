@@ -1,11 +1,11 @@
 package hw10programoptimization
 
 import (
-	"encoding/json"
-	"fmt"
+	"bufio"
 	"io"
-	"regexp"
+	"log"
 	"strings"
+	"sync"
 )
 
 type User struct {
@@ -21,46 +21,63 @@ type User struct {
 type DomainStat map[string]int
 
 func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
-	u, err := getUsers(r)
-	if err != nil {
-		return nil, fmt.Errorf("get users error: %w", err)
-	}
+	u := getUsers(r)
 	return countDomains(u, domain)
 }
 
-type users [100_000]User
-
-func getUsers(r io.Reader) (result users, err error) {
-	content, err := io.ReadAll(r)
-	if err != nil {
-		return
-	}
-
-	lines := strings.Split(string(content), "\n")
-	for i, line := range lines {
-		var user User
-		if err = json.Unmarshal([]byte(line), &user); err != nil {
-			return
-		}
-		result[i] = user
-	}
-	return
+type usersChan struct {
+	userRecord User
+	err        error
 }
 
-func countDomains(u users, domain string) (DomainStat, error) {
-	result := make(DomainStat)
-
-	for _, user := range u {
-		matched, err := regexp.Match("\\."+domain, []byte(user.Email))
-		if err != nil {
-			return nil, err
+func getUsers(r io.Reader) chan usersChan {
+	scanner := bufio.NewScanner(r)
+	c := make(chan usersChan)
+	var user User
+	go func() {
+		defer close(c)
+		for {
+			scanner.Scan()
+			if len(scanner.Bytes()) == 0 {
+				break
+			}
+			e := user.UnmarshalJSON(scanner.Bytes())
+			c <- usersChan{
+				userRecord: user,
+				err:        e,
+			}
 		}
+	}()
+	return c
+}
 
-		if matched {
-			num := result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])]
-			num++
-			result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])] = num
+func countDomains(u chan usersChan, domain string) (DomainStat, error) {
+	result := make(DomainStat)
+	wg := sync.WaitGroup{}
+	const threads = 4
+	wg.Add(threads)
+	mtx := sync.Mutex{}
+	lendomain := len(domain)
+	domencount := func() {
+		defer wg.Done()
+		for user := range u {
+			if user.err != nil {
+				log.Printf("error unmarshaling string: %s", user.err)
+				continue
+			}
+			if user.userRecord.Email[len(user.userRecord.Email)-lendomain:] == domain &&
+				user.userRecord.Email[len(user.userRecord.Email)-lendomain-1] == '.' {
+				domen := strings.ToLower(strings.SplitN(user.userRecord.Email, "@", 2)[1])
+				mtx.Lock()
+				result[domen]++
+				mtx.Unlock()
+			}
 		}
 	}
+	for i := 0; i < threads; i++ {
+		domencount()
+	}
+	wg.Wait()
+
 	return result, nil
 }
