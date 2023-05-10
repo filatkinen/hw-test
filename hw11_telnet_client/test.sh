@@ -14,6 +14,10 @@ sleep 5
 kill ${TL_PID} 2>/dev/null || true
 kill ${NC_PID} 2>/dev/null || true
 
+
+cat /tmp/telnet.out
+cat /tmp/nc.out
+
 function fileEquals() {
   local fileData
   fileData=$(cat "$1")
