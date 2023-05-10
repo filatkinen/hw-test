@@ -51,21 +51,21 @@ func sendRoutine(tc TelnetClient, cancelChan chan struct{}, wg *sync.WaitGroup, 
 	defer wg.Done()
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		in.WriteString(scanner.Text() + "\n")
-		err := tc.Send()
 		select {
 		case <-cancelChan:
 			return
 		default:
-		}
-		if err != nil {
-			log.Printf("Got error: %v\n", err)
-			return
+			in.WriteString(scanner.Text() + "\n")
+			err := tc.Send()
+			if err != nil {
+				log.Printf("Got error: %v\n", err)
+				return
+			}
 		}
 	}
-	if scanner.Err() == nil {
-		fmt.Printf("...EOF")
-	}
+	// if scanner.Err() == nil {
+	//	fmt.Printf("...EOF")
+	// }
 }
 
 func main() {
