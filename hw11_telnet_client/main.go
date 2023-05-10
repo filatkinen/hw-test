@@ -64,7 +64,7 @@ func sendRoutine(tc TelnetClient, cancelChan chan struct{}, wg *sync.WaitGroup, 
 		}
 	}
 	if scanner.Err() == nil {
-		fmt.Printf("...EOF\n")
+		fmt.Printf("...EOF")
 	}
 }
 

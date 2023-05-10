@@ -71,8 +71,10 @@ func (t *Telnet) Receive() error {
 			return fmt.Errorf("%w;%w;", ErrErrorsReceive, err)
 		}
 	}
-	if scanner.Err() != nil {
-		return fmt.Errorf("%w;%w;", ErrErrorsReceive, scanner.Err())
+	if t.conn != nil {
+		if scanner.Err() != nil {
+			return fmt.Errorf("%w;%w;", ErrErrorsReceive, scanner.Err())
+		}
 	}
 	return nil
 }
