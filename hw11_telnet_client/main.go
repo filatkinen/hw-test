@@ -97,12 +97,12 @@ func main() {
 		close(cancelChan)
 	}()
 
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
 	go func() {
 		receiveRoutine(tc)
 	}()
 
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
 		sendRoutine(tc, cancelChan, wg, in)
 	}()
