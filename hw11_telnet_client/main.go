@@ -1,12 +1,9 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"os"
@@ -40,42 +37,12 @@ func GetFlags() (Options, error) {
 	return options, nil
 }
 
-func receiveRoutine(tc TelnetClient) {
-	err := tc.Receive()
-	if err != nil {
-		log.Printf("Got errror during receiving: %v\n", err)
-	}
-}
-
-func sendRoutine(tc TelnetClient, cancelChan chan struct{}, wg *sync.WaitGroup, in *bytes.Buffer) {
-	defer wg.Done()
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		select {
-		case <-cancelChan:
-			return
-		default:
-			in.WriteString(scanner.Text() + "\n")
-			err := tc.Send()
-			if err != nil {
-				log.Printf("Got error: %v\n", err)
-				return
-			}
-		}
-	}
-	if scanner.Err() == nil {
-		fmt.Printf("...EOF")
-	}
-}
-
 func main() {
-	in := new(bytes.Buffer)
-
 	options, err := GetFlags()
 	if err != nil {
 		return
 	}
-	tc := NewTelnetClient(net.JoinHostPort(options.host, options.port), options.timeout, io.NopCloser(in), os.Stdout)
+	tc := NewTelnetClient(net.JoinHostPort(options.host, options.port), options.timeout, os.Stdin, os.Stdout)
 
 	err = tc.Connect()
 	if err != nil {
@@ -83,28 +50,34 @@ func main() {
 		return
 	}
 	defer func() {
-		err := tc.Close()
-		if err != nil {
-			log.Printf("Got error while closing TelnetClient: %v\n", err)
-		}
+		_ = tc.Close()
 	}()
 
 	exitSignal := make(chan os.Signal, 1)
-	cancelChan := make(chan struct{})
 	signal.Notify(exitSignal, syscall.SIGINT)
 	go func() {
 		<-exitSignal
-		close(cancelChan)
+		err := tc.Close()
+		if err != nil {
+			log.Printf("Got error during closing: %v\n", err)
+		}
 	}()
 
 	go func() {
-		receiveRoutine(tc)
+		err := tc.Receive()
+		if err != nil {
+			log.Printf("Got error during receiving: %v\n", err)
+		}
 	}()
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		sendRoutine(tc, cancelChan, wg, in)
+		defer wg.Done()
+		err := tc.Send()
+		if err != nil {
+			log.Printf("Got error during sending: %v\n", err)
+		}
 	}()
 	wg.Wait()
 }

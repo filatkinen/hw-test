@@ -14,6 +14,7 @@ var (
 	ErrErrorsSend    = errors.New("unable to send")
 	ErrErrorsReceive = errors.New("unable to receive")
 	ErrErrorsClose   = errors.New("error with close")
+	ErrErrorsEOF     = errors.New("eof")
 )
 
 type TelnetClient interface {
@@ -57,9 +58,10 @@ func (t *Telnet) Send() error {
 			return fmt.Errorf("%w;%w;", ErrErrorsSend, err)
 		}
 	}
-	if scanner.Err() != nil {
+	if scanner.Err() != nil && t.conn != nil {
 		return fmt.Errorf("%w;%w;", ErrErrorsSend, scanner.Err())
 	}
+	fmt.Println("... EOF")
 	return nil
 }
 
@@ -67,13 +69,8 @@ func (t *Telnet) Receive() error {
 	scanner := bufio.NewScanner(t.conn)
 	for scanner.Scan() {
 		_, err := t.out.Write(append(scanner.Bytes(), '\n'))
-		if err != nil {
+		if err != nil && t.conn != nil {
 			return fmt.Errorf("%w;%w;", ErrErrorsReceive, err)
-		}
-	}
-	if t.conn != nil {
-		if scanner.Err() != nil {
-			return fmt.Errorf("%w;%w;", ErrErrorsReceive, scanner.Err())
 		}
 	}
 	return nil
