@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -25,11 +24,12 @@ type TelnetClient interface {
 }
 
 type Telnet struct {
-	in      io.ReadCloser
-	out     io.Writer
-	timeout time.Duration
-	address string
-	conn    net.Conn
+	in          io.ReadCloser
+	out         io.Writer
+	timeout     time.Duration
+	address     string
+	conn        net.Conn
+	isconnected bool
 }
 
 func NewTelnetClient(address string, timeout time.Duration, in io.ReadCloser, out io.Writer) TelnetClient {
@@ -44,45 +44,37 @@ func NewTelnetClient(address string, timeout time.Duration, in io.ReadCloser, ou
 func (t *Telnet) Connect() error {
 	conn, err := net.DialTimeout("tcp", t.address, t.timeout)
 	if err != nil {
-		return fmt.Errorf("%w;%w;", ErrErrorsConnect, err)
+		return fmt.Errorf("%s %w", err.Error(), ErrErrorsConnect)
 	}
 	t.conn = conn
+	t.isconnected = true
 	return nil
 }
 
 func (t *Telnet) Send() error {
-	scanner := bufio.NewScanner(t.in)
-	for scanner.Scan() {
-		_, err := t.conn.Write(append(scanner.Bytes(), '\n'))
-		if err != nil {
-			return fmt.Errorf("%w;%w;", ErrErrorsSend, err)
-		}
+	_, err := io.Copy(t.conn, t.in)
+	if err != nil && t.isconnected {
+		return fmt.Errorf("%s %w", err.Error(), ErrErrorsSend)
 	}
-	if scanner.Err() != nil && t.conn != nil {
-		return fmt.Errorf("%w;%w;", ErrErrorsSend, scanner.Err())
-	}
-	fmt.Println("... EOF")
 	return nil
 }
 
 func (t *Telnet) Receive() error {
-	scanner := bufio.NewScanner(t.conn)
-	for scanner.Scan() {
-		_, err := t.out.Write(append(scanner.Bytes(), '\n'))
-		if err != nil && t.conn != nil {
-			return fmt.Errorf("%w;%w;", ErrErrorsReceive, err)
-		}
+	_, err := io.Copy(t.out, t.conn)
+	if err != nil && t.isconnected {
+		return fmt.Errorf("%s %w", err.Error(), ErrErrorsReceive)
 	}
 	return nil
 }
 
 func (t *Telnet) Close() error {
-	if t.conn == nil {
-		return fmt.Errorf("%w;%w;", ErrErrorsClose, errors.New("connection is already closed"))
+	if !t.isconnected {
+		return nil
 	}
+	t.isconnected = false
 	err := t.conn.Close()
 	if err != nil {
-		return fmt.Errorf("%w;%w;", ErrErrorsClose, err)
+		return fmt.Errorf("%s %w", err.Error(), ErrErrorsClose)
 	}
 	return nil
 }
