@@ -8,7 +8,7 @@ build:
 	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/calendar
 
 run: build
-	$(BIN) -config ./configs/config.toml
+	$(BIN) -config ./configs/server.yaml
 
 build-img:
 	docker build \
@@ -23,12 +23,27 @@ version: build
 	$(BIN) version
 
 test:
-	go test -race ./internal/... ./pkg/...
+	go test -race -v ./...
+
+test-mysql:
+	go test -v -race  ./internal/storage/ -tags mysql
+
+test-pgsql:
+	go test -v -race  ./internal/storage/ -tags pgsql
+
 
 install-lint-deps:
 	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.50.1
 
 lint: install-lint-deps
 	golangci-lint run ./...
+
+migrate-mysql:
+	./migrations/migrate-mysql.sh
+
+
+migrate-pgsql:
+	./migrations/migrate-pgsql.sh
+
 
 .PHONY: build run build-img run-img version test lint
