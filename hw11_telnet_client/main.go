@@ -8,7 +8,6 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 )
@@ -49,9 +48,12 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+
 	defer func() {
 		_ = tc.Close()
 	}()
+
+	exitChan := make(chan struct{})
 
 	exitSignal := make(chan os.Signal, 1)
 	signal.Notify(exitSignal, syscall.SIGINT)
@@ -61,6 +63,7 @@ func main() {
 		if err != nil {
 			log.Printf("Got error during closing: %v\n", err)
 		}
+		exitChan <- struct{}{}
 	}()
 
 	go func() {
@@ -68,18 +71,15 @@ func main() {
 		if err != nil {
 			log.Printf("Got error during receiving: %v\n", err)
 		}
+		exitChan <- struct{}{}
 	}()
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		err := tc.Send()
 		if err != nil {
 			log.Printf("Got error during sending: %v\n", err)
-			return
 		}
-		fmt.Println("...EOF")
+		exitChan <- struct{}{}
 	}()
-	wg.Wait()
+	<-exitChan
 }
