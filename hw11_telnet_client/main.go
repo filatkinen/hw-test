@@ -39,14 +39,14 @@ func GetFlags() (Options, error) {
 func main() {
 	options, err := GetFlags()
 	if err != nil {
-		return
+		os.Exit(1)
 	}
 	tc := NewTelnetClient(net.JoinHostPort(options.host, options.port), options.timeout, os.Stdin, os.Stdout)
 
 	err = tc.Connect()
 	if err != nil {
 		fmt.Println(err)
-		return
+		os.Exit(1)
 	}
 
 	defer func() {
