@@ -43,7 +43,7 @@ func main() {
 	}
 	l := logger.New(conf.LogLevel, flog)
 	if flog == os.Stdout && len(conf.Logfile) != 0 {
-		l.Logging(logger.LevelInfo, fmt.Sprintf("Error opening file %s for logging. Using console", conf.Logfile))
+		l.Info(fmt.Sprintf("Error opening file %s for logging. Using console", conf.Logfile))
 	}
 	defer l.Close()
 

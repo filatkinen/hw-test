@@ -19,7 +19,7 @@ var events = []*storage.Event{
 		DateTimeStart:  timeNow.Add(time.Second * 10),
 		DateTimeEnd:    timeNow.Add(time.Second * 30),
 		DateTimeNotice: timeNow.Add(-time.Second * 10),
-		UserID:         storage.PseudoUUID(),
+		UserID:         "ba2881ed-694d-46e7-b095-1372bb79e14f",
 	},
 	{
 		ID:             "40d42cfa-6a3b-5544-f253-a21e899f0bc9",
@@ -27,7 +27,7 @@ var events = []*storage.Event{
 		DateTimeStart:  timeNow.Add(time.Second * 10),
 		DateTimeEnd:    timeNow.Add(time.Second * 30),
 		DateTimeNotice: timeNow.Add(-time.Second * 10),
-		UserID:         storage.PseudoUUID(),
+		UserID:         "40d42cfa-6a3b-5544-f253-a21e899f0bc9",
 	},
 	{
 		ID:             "5eb29ff9-ea25-4894-a6fd-052ca84531b0",
@@ -35,7 +35,7 @@ var events = []*storage.Event{
 		DateTimeStart:  timeNow.Add(time.Second * 10),
 		DateTimeEnd:    timeNow.Add(time.Second * 30),
 		DateTimeNotice: timeNow.Add(-time.Second * 5),
-		UserID:         storage.PseudoUUID(),
+		UserID:         "5eb29ff9-ea25-4894-a6fd-052ca84531b0",
 	},
 	{
 		ID:             "aaa1d209-3181-15c9-4dbe-400b80331a78",
@@ -43,7 +43,7 @@ var events = []*storage.Event{
 		DateTimeStart:  timeNow.Add(time.Second * 10),
 		DateTimeEnd:    timeNow.Add(time.Second * 30),
 		DateTimeNotice: timeNow.Add(time.Second * 0),
-		UserID:         storage.PseudoUUID(),
+		UserID:         "aaa1d209-3181-15c9-4dbe-400b80331a78",
 	},
 	{
 		ID:             "732f2d0d-2630-0cd5-f78a-732faf83e68a",
@@ -51,7 +51,7 @@ var events = []*storage.Event{
 		DateTimeStart:  timeNow.Add(time.Second * 10),
 		DateTimeEnd:    timeNow.Add(time.Second * 30),
 		DateTimeNotice: timeNow.Add(time.Second * 5),
-		UserID:         storage.PseudoUUID(),
+		UserID:         "732f2d0d-2630-0cd5-f78a-732faf83e68a",
 	},
 }
 

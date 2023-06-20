@@ -1,14 +1,13 @@
 package server
 
 import (
+	"log"
 	"os"
 	"time"
 
 	"github.com/filatkinen/hw-test/hw12_13_14_15_calendar/internal/logger"
 	"github.com/spf13/viper"
 )
-
-const DefaultMaxIdleTime time.Duration = time.Minute * 15
 
 type DBConfig struct {
 	DBUser       string
@@ -32,6 +31,7 @@ type Config struct {
 }
 
 func NewConfig(in string) (Config, error) {
+	const DefaultMaxIdleTime time.Duration = time.Minute * 15
 	viper.SetConfigType("yaml")
 	viper.SetConfigFile(in)
 	if err := viper.ReadInConfig(); err != nil {
@@ -44,6 +44,7 @@ func NewConfig(in string) (Config, error) {
 
 	duration, err := time.ParseDuration(viper.GetString("db.maxidletime"))
 	if err != nil {
+		log.Printf("Error parsing db.maxidletime value: %s, using defaul tvalue:%s", err.Error(), DefaultMaxIdleTime)
 		duration = DefaultMaxIdleTime
 	}
 

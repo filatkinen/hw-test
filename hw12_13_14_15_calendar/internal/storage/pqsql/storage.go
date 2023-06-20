@@ -49,23 +49,25 @@ func (s *Storage) Connect(ctx context.Context) error {
 	return s.db.PingContext(ctx)
 }
 
-func (s *Storage) GetLastNoticeTimeSetNew(ctx context.Context, onTime time.Time) (*time.Time, error) {
+func (s *Storage) GetLastNoticeTimeSetNew(ctx context.Context, onTime time.Time) (lastCheck *time.Time, err error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
-
+	defer func() {
+		if err != nil {
+			err = errors.Join(err, tx.Rollback())
+		}
+	}()
 	query := `SELECT last_check_date_time
 	FROM notes_check
 	ORDER BY last_check_date_time DESC
 	LIMIT 1`
 
-	var lastCheck time.Time
 	err = tx.QueryRowContext(ctx, query).Scan(&lastCheck)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		lastCheck = storage.FistTimeCheckNotice
+		*lastCheck = storage.FistTimeCheckNotice
 	} else if err != nil {
 		return nil, err
 	}
@@ -83,7 +85,7 @@ func (s *Storage) GetLastNoticeTimeSetNew(ctx context.Context, onTime time.Time)
 		return nil, err
 	}
 
-	return &lastCheck, nil
+	return
 }
 
 func (s *Storage) Close(_ context.Context) error {
@@ -96,10 +98,7 @@ func (s *Storage) AddEvent(ctx context.Context, event *storage.Event) error {
 			  VALUES ($1,$2,$3,$4,$5,$6,$7)`
 	_, err := s.db.ExecContext(ctx, query, event.ID, event.Title, event.Description,
 		event.DateTimeStart, event.DateTimeEnd, event.DateTimeNotice, event.UserID)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (s *Storage) GetEvent(ctx context.Context, id string) (*storage.Event, error) {

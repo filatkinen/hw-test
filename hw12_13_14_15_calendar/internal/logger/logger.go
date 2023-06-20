@@ -71,9 +71,19 @@ func (l *Logger) SetLogLevel(level LoggingLevel) {
 }
 
 func (l *Logger) Logging(level LoggingLevel, msg string) {
-	if level == LevelError || level <= l.logLevel {
-		l.logOut.Printf("%s: %s log_level=%s", level, msg, l.logLevel)
-	}
+	l.logOut.Printf("%s: %s log_level=%s", level, msg, l.logLevel)
+}
+
+func (l *Logger) Info(msg string) {
+	l.Logging(LevelInfo, msg)
+}
+
+func (l *Logger) Debug(msg string) {
+	l.Logging(LevelDebug, msg)
+}
+
+func (l *Logger) Warn(msg string) {
+	l.Logging(LevelWarn, msg)
 }
 
 func (l *Logger) Error(msg string) {

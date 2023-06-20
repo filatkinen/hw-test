@@ -43,7 +43,7 @@ func NewServer(config server.Config, logSrv *logger.Logger) (*Server, error) {
 }
 
 func (s *Server) Start() error {
-	s.logSrv.Logging(logger.LevelInfo, fmt.Sprintf("Starting server: %s", s.srv.Addr))
+	s.logSrv.Info(fmt.Sprintf("Starting server: %s", s.srv.Addr))
 	err := s.srv.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
@@ -55,7 +55,7 @@ func (s *Server) Stop(ctx context.Context) error {
 	if err := s.srv.Shutdown(ctx); err != nil {
 		s.logSrv.Error(fmt.Sprintf("HTTP shutdown error: %v", err))
 	}
-	s.logSrv.Logging(logger.LevelInfo, "HTTP graceful shutdown complete.")
+	s.logSrv.Info("HTTP graceful shutdown complete.")
 
 	return nil
 }

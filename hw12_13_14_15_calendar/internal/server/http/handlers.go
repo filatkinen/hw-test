@@ -40,16 +40,24 @@ func (s *Server) handlerEventsList(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handlerEventsAddSome(w http.ResponseWriter, r *http.Request) {
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec
+	idUUID, err := storage.UUID()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	useridUUID, err := storage.UUID()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 	event := storage.Event{
-		ID:             storage.PseudoUUID(),
+		ID:             idUUID,
 		Title:          strconv.FormatInt(int64(rnd.Intn(100)), 10) + " Task",
 		Description:    "",
 		DateTimeStart:  time.Now().Add(time.Second * time.Duration(rnd.Intn(1000))),
 		DateTimeEnd:    time.Now().Add(time.Second * time.Duration(rnd.Intn(1000))),
 		DateTimeNotice: time.Now().Add(time.Second * time.Duration(rnd.Intn(1000))),
-		UserID:         storage.PseudoUUID(),
+		UserID:         useridUUID,
 	}
-	err := s.app.CreateEvent(r.Context(), &event)
+	err = s.app.CreateEvent(r.Context(), &event)
 	if err != nil {
 		http.Error(w, "Error creating event "+err.Error(), http.StatusInternalServerError)
 		return

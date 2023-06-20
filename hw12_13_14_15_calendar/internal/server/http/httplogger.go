@@ -25,7 +25,7 @@ func newHTTPLogger(fileNameLogHTTP string, logServer *logger.Logger) *httplog {
 	if fileLog == os.Stdout {
 		logServer.Error(fmt.Sprintf("Error openening file %s for HTTP logging, using os.Stdout", fileNameLogHTTP))
 	} else {
-		logServer.Logging(logger.LevelInfo, fmt.Sprintf("logging HTTTP using %s", fileNameLogHTTP))
+		logServer.Info(fmt.Sprintf("logging HTTTP using %s", fileNameLogHTTP))
 	}
 	return &httplog{
 		httplogger: httplogger,

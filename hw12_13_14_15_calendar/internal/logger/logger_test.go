@@ -30,7 +30,14 @@ func TestLogger(t *testing.T) {
 	defer logger.Close()
 	rb := bufio.NewScanner(r)
 	for _, test := range tests {
-		logger.Logging(test.level, test.msg)
+		switch test.level { //nolint
+		case LevelInfo:
+			logger.Info(test.msg)
+		case LevelDebug:
+			logger.Debug(test.msg)
+		case LevelWarn:
+			logger.Warn(test.msg)
+		}
 		rb.Scan()
 		require.Equal(t, strings.SplitN(rb.Text(), " ", 3)[2], test.want)
 	}
@@ -46,7 +53,14 @@ func TestLoggerFile(t *testing.T) {
 	logger := New(LevelDebug, f)
 
 	for _, test := range tests {
-		logger.Logging(test.level, test.msg)
+		switch test.level { //nolint
+		case LevelInfo:
+			logger.Info(test.msg)
+		case LevelDebug:
+			logger.Debug(test.msg)
+		case LevelWarn:
+			logger.Warn(test.msg)
+		}
 	}
 	filename := f.Name()
 	logger.Close()

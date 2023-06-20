@@ -23,8 +23,8 @@ func New(servLog *logger.Logger, config server.Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	servLog.Logging(logger.LevelInfo, "application Calendar started")
-	servLog.Logging(logger.LevelInfo, "application Calendar using db:"+config.StoreType)
+	servLog.Info("application Calendar started")
+	servLog.Info("application Calendar using db:" + config.StoreType)
 
 	return &App{
 		servLog: servLog,
@@ -65,14 +65,14 @@ func newStorage(config server.Config) (storage.Store, error) {
 }
 
 func (a *App) Close(ctx context.Context) error {
-	a.servLog.Logging(logger.LevelInfo, "application Calendar stopped")
+	a.servLog.Info("application Calendar stopped")
 
 	err := a.storage.Close(ctx)
 	if err != nil {
 		a.servLog.Error("DB was closed with error:" + err.Error())
 		return err
 	}
-	a.servLog.Logging(logger.LevelInfo, "application Calendar DB connection was closed")
+	a.servLog.Info("application Calendar DB connection was closed")
 
 	return nil
 }
