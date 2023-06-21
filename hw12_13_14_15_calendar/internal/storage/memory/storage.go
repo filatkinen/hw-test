@@ -1,14 +1,113 @@
 package memorystorage
 
-import "sync"
+import (
+	"context"
+	"sync"
+	"time"
+
+	"github.com/filatkinen/hw-test/hw12_13_14_15_calendar/internal/storage"
+)
 
 type Storage struct {
-	// TODO
-	mu sync.RWMutex //nolint:unused
+	events              []*storage.Event
+	lastTimeCheckNotice time.Time
+	mu                  sync.RWMutex
 }
 
 func New() *Storage {
-	return &Storage{}
+	return &Storage{
+		events:              []*storage.Event{},
+		lastTimeCheckNotice: storage.FistTimeCheckNotice,
+		mu:                  sync.RWMutex{},
+	}
 }
 
-// TODO
+func (s *Storage) AddEvent(_ context.Context, event *storage.Event) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.events = append(s.events, event)
+	return nil
+}
+
+func (s *Storage) GetEvent(_ context.Context, id string) (*storage.Event, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.events {
+		if s.events[i].ID == id {
+			ev := *s.events[i]
+			return &ev, nil
+		}
+	}
+	return nil, storage.ErrEventIDNotFound
+}
+
+func (s *Storage) ChangeEvent(_ context.Context, event *storage.Event) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.events {
+		if s.events[i].ID == event.ID {
+			*s.events[i] = *event
+			return nil
+		}
+	}
+	return storage.ErrEventIDNotFound
+}
+
+func (s *Storage) DeleteEvent(_ context.Context, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.events {
+		if s.events[i].ID == id {
+			s.events = append(s.events[:i], s.events[i+1:]...)
+			return nil
+		}
+	}
+	return storage.ErrEventIDNotFound
+}
+
+func (s *Storage) ListEvents(_ context.Context, from, to time.Time) ([]*storage.Event, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var events []*storage.Event
+	for i := range s.events {
+		if s.events[i].DateTimeStart.Equal(from) || s.events[i].DateTimeStart.Equal(to) ||
+			(s.events[i].DateTimeStart.After(from) && s.events[i].DateTimeStart.Before(to)) {
+			events = append(events, s.events[i])
+		}
+	}
+	return events, nil
+}
+
+func (s *Storage) ListNoticesToSend(_ context.Context, onTime time.Time) ([]*storage.Notice, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var notice []*storage.Notice
+	for i := range s.events {
+		if s.events[i].DateTimeNotice.Equal(onTime) ||
+			s.events[i].DateTimeNotice.Before(onTime) && s.events[i].DateTimeStart.After(onTime) &&
+				s.events[i].DateTimeNotice.After(s.lastTimeCheckNotice) {
+			notice = append(notice, &storage.Notice{
+				ID:       s.events[i].ID,
+				Title:    s.events[i].Title,
+				DateTime: s.events[i].DateTimeStart,
+				UserID:   s.events[i].UserID,
+			})
+		}
+	}
+	s.lastTimeCheckNotice = onTime
+	return notice, nil
+}
+
+func (s *Storage) CountEvents(_ context.Context) (int, error) {
+	return len(s.events), nil
+}
+
+func (s *Storage) GetLastNoticeTimeSetNew(_ context.Context, onTime time.Time) (*time.Time, error) {
+	lastTime := s.lastTimeCheckNotice
+	s.lastTimeCheckNotice = onTime
+	return &lastTime, nil
+}
+
+func (s *Storage) Close(_ context.Context) error {
+	return nil
+}
