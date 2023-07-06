@@ -10,50 +10,52 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var timeNow = time.Now().UTC().Round(0).Add(-time.Hour * 24 * 365)
-
-var events = []*storage.Event{
-	{
-		ID:             "ba2881ed-694d-46e7-b095-1372bb79e14f",
-		Title:          "Task1",
-		DateTimeStart:  timeNow.Add(time.Second * 10),
-		DateTimeEnd:    timeNow.Add(time.Second * 30),
-		DateTimeNotice: timeNow.Add(-time.Second * 10),
-		UserID:         "ba2881ed-694d-46e7-b095-1372bb79e14f",
-	},
-	{
-		ID:             "40d42cfa-6a3b-5544-f253-a21e899f0bc9",
-		Title:          "Task2",
-		DateTimeStart:  timeNow.Add(time.Second * 10),
-		DateTimeEnd:    timeNow.Add(time.Second * 30),
-		DateTimeNotice: timeNow.Add(-time.Second * 10),
-		UserID:         "40d42cfa-6a3b-5544-f253-a21e899f0bc9",
-	},
-	{
-		ID:             "5eb29ff9-ea25-4894-a6fd-052ca84531b0",
-		Title:          "Task3",
-		DateTimeStart:  timeNow.Add(time.Second * 10),
-		DateTimeEnd:    timeNow.Add(time.Second * 30),
-		DateTimeNotice: timeNow.Add(-time.Second * 5),
-		UserID:         "5eb29ff9-ea25-4894-a6fd-052ca84531b0",
-	},
-	{
-		ID:             "aaa1d209-3181-15c9-4dbe-400b80331a78",
-		Title:          "Task4",
-		DateTimeStart:  timeNow.Add(time.Second * 10),
-		DateTimeEnd:    timeNow.Add(time.Second * 30),
-		DateTimeNotice: timeNow.Add(time.Second * 0),
-		UserID:         "aaa1d209-3181-15c9-4dbe-400b80331a78",
-	},
-	{
-		ID:             "732f2d0d-2630-0cd5-f78a-732faf83e68a",
-		Title:          "Task5",
-		DateTimeStart:  timeNow.Add(time.Second * 10),
-		DateTimeEnd:    timeNow.Add(time.Second * 30),
-		DateTimeNotice: timeNow.Add(time.Second * 5),
-		UserID:         "732f2d0d-2630-0cd5-f78a-732faf83e68a",
-	},
-}
+var (
+	timeNow = time.Now().UTC().Round(0).Add(-time.Hour * 24 * 365)
+	UserID  = "ba2881ed-694d-46e7-b095-1372bb79e14f"
+	events  = []*storage.Event{
+		{
+			ID:             "ba2881ed-694d-46e7-b095-1372bb79e14f",
+			Title:          "Task1",
+			DateTimeStart:  timeNow.Add(time.Second * 10),
+			DateTimeEnd:    timeNow.Add(time.Second * 30),
+			DateTimeNotice: timeNow.Add(-time.Second * 10),
+			UserID:         UserID,
+		},
+		{
+			ID:             "40d42cfa-6a3b-5544-f253-a21e899f0bc9",
+			Title:          "Task2",
+			DateTimeStart:  timeNow.Add(time.Second * 10),
+			DateTimeEnd:    timeNow.Add(time.Second * 30),
+			DateTimeNotice: timeNow.Add(-time.Second * 10),
+			UserID:         UserID,
+		},
+		{
+			ID:             "5eb29ff9-ea25-4894-a6fd-052ca84531b0",
+			Title:          "Task3",
+			DateTimeStart:  timeNow.Add(time.Second * 10),
+			DateTimeEnd:    timeNow.Add(time.Second * 30),
+			DateTimeNotice: timeNow.Add(-time.Second * 5),
+			UserID:         UserID,
+		},
+		{
+			ID:             "aaa1d209-3181-15c9-4dbe-400b80331a78",
+			Title:          "Task4",
+			DateTimeStart:  timeNow.Add(time.Second * 10),
+			DateTimeEnd:    timeNow.Add(time.Second * 30),
+			DateTimeNotice: timeNow.Add(time.Second * 0),
+			UserID:         UserID,
+		},
+		{
+			ID:             "732f2d0d-2630-0cd5-f78a-732faf83e68a",
+			Title:          "Task5",
+			DateTimeStart:  timeNow.Add(time.Second * 10),
+			DateTimeEnd:    timeNow.Add(time.Second * 30),
+			DateTimeNotice: timeNow.Add(time.Second * 5),
+			UserID:         UserID,
+		},
+	}
+)
 
 func TestMemoryStorage(t *testing.T) {
 	ctx := context.Background()
@@ -71,12 +73,12 @@ func runTestStorage(t *testing.T, ctx context.Context, store storage.Store) { //
 
 	// added events for testing
 	for i := range events {
-		_ = store.AddEvent(ctx, events[i])
+		_ = store.AddEvent(ctx, events[i], UserID)
 	}
 
 	// running tests
 	t.Run("Count rows", func(t *testing.T) {
-		count, err := store.CountEvents(ctx)
+		count, err := store.CountEvents(ctx, UserID)
 		require.Nil(t, err)
 		require.True(t, count > 0)
 	})
@@ -87,7 +89,7 @@ func runTestStorage(t *testing.T, ctx context.Context, store storage.Store) { //
 			idevents[v.ID] = true
 		}
 
-		ev, err := store.ListEvents(ctx, timeNow, timeNow.Add(time.Second*30))
+		ev, err := store.ListEvents(ctx, timeNow, timeNow.Add(time.Second*30), UserID)
 		require.Nil(t, err)
 		require.NotNil(t, ev)
 		for i := range events {

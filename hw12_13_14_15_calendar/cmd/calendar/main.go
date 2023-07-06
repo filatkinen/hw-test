@@ -64,7 +64,7 @@ func main() {
 	signalFailedStart := make(chan struct{})
 	go func() {
 		if err := serv.Start(); err != nil {
-			l.Error("failed to start http server: " + err.Error())
+			l.Error("failed to start server: " + err.Error())
 		}
 		signalFailedStart <- struct{}{}
 	}()

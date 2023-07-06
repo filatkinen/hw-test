@@ -77,10 +77,100 @@ func (a *App) Close(ctx context.Context) error {
 	return nil
 }
 
-func (a *App) CreateEvent(ctx context.Context, event *storage.Event) error {
-	return a.storage.AddEvent(ctx, event)
+func (a *App) AddEvent(ctx context.Context, event *storage.Event, userID string) (string, error) {
+	eventID, err := storage.UUID()
+	if err != nil {
+		return "", err
+	}
+	event.ID = eventID
+	return eventID, a.storage.AddEvent(ctx, event, userID)
 }
 
-func (a *App) ListEvents(ctx context.Context, from, to time.Time) ([]*storage.Event, error) {
-	return a.storage.ListEvents(ctx, from, to)
+func (a *App) ChangeEvent(ctx context.Context, event *storage.Event) error {
+	return a.storage.ChangeEvent(ctx, event)
+}
+
+func (a *App) ChangeEventUser(ctx context.Context, event *storage.Event, userID string) error {
+	ev, err := a.storage.GetEvent(ctx, event.ID)
+	if err != nil {
+		return err
+	}
+	if ev.UserID != userID {
+		return storage.ErrWrongEventUser
+	}
+	return a.storage.ChangeEvent(ctx, event)
+}
+
+func (a *App) GetEvent(ctx context.Context, eventID string) (*storage.Event, error) {
+	return a.storage.GetEvent(ctx, eventID)
+}
+
+func (a *App) GetEventUser(ctx context.Context, eventID string, userID string) (*storage.Event, error) {
+	event, err := a.storage.GetEvent(ctx, eventID)
+	if err != nil {
+		return nil, err
+	}
+	if event.UserID != userID {
+		return nil, storage.ErrWrongEventUser
+	}
+
+	return a.storage.GetEvent(ctx, eventID)
+}
+
+func (a *App) DeleteEvent(ctx context.Context, eventID string) error {
+	return a.storage.DeleteEvent(ctx, eventID)
+}
+
+func (a *App) DeleteEventUser(ctx context.Context, eventID string, userID string) error {
+	event, err := a.storage.GetEvent(ctx, eventID)
+	if err != nil {
+		return err
+	}
+	if event.UserID != userID {
+		return storage.ErrWrongEventUser
+	}
+	return a.storage.DeleteEvent(ctx, eventID)
+}
+
+func (a *App) ListEvents(ctx context.Context, from, to time.Time, userID string) ([]*storage.Event, error) {
+	return a.storage.ListEvents(ctx, from, to, userID)
+}
+
+func (a *App) ListEventsDay(ctx context.Context, date time.Time, userID string) ([]*storage.Event, error) {
+	from, to := datesDay(date)
+	return a.storage.ListEvents(ctx, from, to, userID)
+}
+
+func (a *App) ListEventsWeek(ctx context.Context, date time.Time, userID string) ([]*storage.Event, error) {
+	from, to := datesWeek(date)
+	return a.storage.ListEvents(ctx, from, to, userID)
+}
+
+func (a *App) ListEventsMonth(ctx context.Context, date time.Time, userID string) ([]*storage.Event, error) {
+	from, to := datesMonth(date)
+	return a.storage.ListEvents(ctx, from, to, userID)
+}
+
+func datesDay(t time.Time) (from time.Time, to time.Time) {
+	from = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+	to = time.Date(t.Year(), t.Month(), t.Day()+1, 0, 0, 0, 0, time.UTC)
+	return
+}
+
+func datesWeek(t time.Time) (from time.Time, to time.Time) {
+	day := t.Day()
+	if t.Weekday() == time.Sunday {
+		day -= 6
+	} else {
+		day -= int(t.Weekday()) + 1
+	}
+	from = time.Date(t.Year(), t.Month(), day, 0, 0, 0, 0, time.UTC)
+	to = time.Date(t.Year(), t.Month(), day+7, 0, 0, 0, 0, time.UTC)
+	return
+}
+
+func datesMonth(t time.Time) (from time.Time, to time.Time) {
+	from = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)
+	to = time.Date(t.Year(), t.Month()+1, 1, 0, 0, 0, 0, time.UTC)
+	return
 }

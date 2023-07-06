@@ -7,18 +7,20 @@ import (
 )
 
 var (
-	ErrEventIDNotFound  = errors.New("event id not found")
+	ErrEventIDNotFound = errors.New("event id not found")
+	ErrWrongEventUser  = errors.New("event  doesn't belong to user")
+
 	FistTimeCheckNotice = time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
 )
 
 type Store interface {
-	AddEvent(context.Context, *Event) error
-	GetEvent(context.Context, string) (*Event, error)
-	ChangeEvent(context.Context, *Event) error
-	DeleteEvent(context.Context, string) error
-	ListEvents(context.Context, time.Time, time.Time) ([]*Event, error)
-	ListNoticesToSend(context.Context, time.Time) ([]*Notice, error)
-	GetLastNoticeTimeSetNew(context.Context, time.Time) (*time.Time, error)
-	CountEvents(context.Context) (int, error)
-	Close(context.Context) error
+	AddEvent(ctx context.Context, event *Event, userID string) error
+	ChangeEvent(ctx context.Context, event *Event) error
+	DeleteEvent(ctx context.Context, eventID string) error
+	GetEvent(ctx context.Context, eventID string) (*Event, error)
+	ListEvents(ctx context.Context, from time.Time, to time.Time, userID string) ([]*Event, error)
+	ListNoticesToSend(ctx context.Context, onTime time.Time) ([]*Notice, error)
+	GetLastNoticeTimeSetNew(ctx context.Context, lastCheck time.Time) (*time.Time, error)
+	CountEvents(ctx context.Context, userID string) (int, error)
+	Close(ctx context.Context) error
 }

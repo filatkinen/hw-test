@@ -65,7 +65,7 @@ func (s *Storage) GetLastNoticeTimeSetNew(ctx context.Context, onTime time.Time)
 	ORDER BY last_check_date_time DESC
 	LIMIT 1`
 
-	err = tx.QueryRowContext(ctx, query).Scan(&lastCheck)
+	err = tx.QueryRowContext(ctx, query).Scan(lastCheck)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		*lastCheck = storage.FistTimeCheckNotice
@@ -93,21 +93,21 @@ func (s *Storage) Close(_ context.Context) error {
 	return s.db.Close()
 }
 
-func (s *Storage) AddEvent(ctx context.Context, event *storage.Event) error {
+func (s *Storage) AddEvent(ctx context.Context, event *storage.Event, userID string) error {
 	query := `INSERT INTO events (event_id, title, description, 
                     date_time_start, date_time_end, date_time_notice, user_id) 
 			  VALUES (?,?,?,?,?,?,?)`
 	_, err := s.db.ExecContext(ctx, query, event.ID, event.Title, event.Description,
-		event.DateTimeStart, event.DateTimeEnd, event.DateTimeNotice, event.UserID)
+		event.DateTimeStart, event.DateTimeEnd, event.DateTimeNotice, userID)
 	return err
 }
 
-func (s *Storage) GetEvent(ctx context.Context, id string) (*storage.Event, error) {
+func (s *Storage) GetEvent(ctx context.Context, eventID string) (*storage.Event, error) {
 	r := storage.Event{}
 	var description sql.NullString
 	query := `SELECT event_id, title, description, 
                     date_time_start, date_time_end, date_time_notice, user_id from events WHERE event_id=?`
-	if err := s.db.QueryRowContext(ctx, query, id).
+	if err := s.db.QueryRowContext(ctx, query, eventID).
 		Scan(&r.ID, &r.Title, &description, &r.DateTimeStart, &r.DateTimeEnd, &r.DateTimeNotice, &r.UserID); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, storage.ErrEventIDNotFound
@@ -150,10 +150,10 @@ func (s *Storage) ChangeEvent(ctx context.Context, event *storage.Event) error {
 	return nil
 }
 
-func (s *Storage) DeleteEvent(ctx context.Context, id string) error {
+func (s *Storage) DeleteEvent(ctx context.Context, eventID string) error {
 	query := `DELETE FROM events 
               WHERE event_id=?`
-	result, err := s.db.ExecContext(ctx, query, id)
+	result, err := s.db.ExecContext(ctx, query, eventID)
 	if err != nil {
 		return err
 	}
@@ -167,12 +167,12 @@ func (s *Storage) DeleteEvent(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *Storage) ListEvents(ctx context.Context, from, to time.Time) ([]*storage.Event, error) {
+func (s *Storage) ListEvents(ctx context.Context, from, to time.Time, userID string) ([]*storage.Event, error) {
 	query := `SELECT event_id, title, description, 
                     date_time_start, date_time_end, date_time_notice, user_id 
 			  FROM events
-			  WHERE date_time_start>=? AND date_time_start<=?`
-	rows, err := s.db.QueryContext(ctx, query, s.truncateTime(from), s.truncateTime(to))
+			  WHERE user_id=? AND date_time_start>=? AND date_time_start<=?`
+	rows, err := s.db.QueryContext(ctx, query, userID, s.truncateTime(from), s.truncateTime(to))
 	if err != nil {
 		return nil, err
 	}
@@ -248,10 +248,10 @@ func (s *Storage) ListNoticesToSend(ctx context.Context, onTime time.Time) ([]*s
 	return notices, nil
 }
 
-func (s *Storage) CountEvents(ctx context.Context) (int, error) {
-	query := `SELECT COUNT(*) AS count FROM events`
+func (s *Storage) CountEvents(ctx context.Context, userID string) (int, error) {
+	query := `SELECT COUNT(*) AS count FROM events where user_id=?`
 	var count int
-	err := s.db.QueryRowContext(ctx, query).Scan(&count)
+	err := s.db.QueryRowContext(ctx, query, userID).Scan(&count)
 	if err != nil {
 		return 0, err
 	}
