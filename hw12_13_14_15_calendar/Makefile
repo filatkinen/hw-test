@@ -32,10 +32,7 @@ test-pgsql:
 	go test -v -race  ./internal/storage/ -tags pgsql
 
 generate:
-	protoc -I  internal/grpcservice/ internal/grpcservice/calendar.proto   --go_out=internal/grpcservice/
-	protoc -I  internal/grpcservice/ internal/grpcservice/calendar.proto   --go-grpc_out=require_unimplemented_servers=false:internal/grpcservice/
-
-
+	go generate cmd/calendar/main.go
 
 install-lint-deps:
 	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.52.2
