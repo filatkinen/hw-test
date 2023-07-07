@@ -77,6 +77,7 @@ func testGRPCAPI(t *testing.T, address string) { //nolint
 	for i := 0; i < 10; i++ {
 		var event storage.Event
 		event.DateTimeStart = basedate.Add(-time.Hour * 24 * time.Duration(i))
+		event.DateTimeNotice = basedate.Add(-time.Hour*24*time.Duration(i) + time.Minute*15)
 		event.DateTimeEnd = basedate.Add(-time.Hour*24*time.Duration(i) + time.Minute*30)
 		event.Title = fmt.Sprintf("Task %d", i)
 		if i < 5 {
@@ -133,4 +134,16 @@ func testGRPCAPI(t *testing.T, address string) { //nolint
 	err = cl.DeleteEventUser(ctx, eventID, userid)
 	require.NotNil(t, err)
 	log.Println(err)
+
+	// get notices to send
+	timeToNotice := basedate.Add(-time.Hour*24*time.Duration(0) + time.Minute*15)
+	notices, err := cl.GetNoticesToSend(ctx, timeToNotice)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(notices))
+
+	// get notices to delete
+	timeToDelete := basedate.Add(+time.Hour * 24 * 366)
+	notices, err = cl.GetNoticesToDelete(ctx, timeToDelete)
+	require.NoError(t, err)
+	require.Equal(t, len(notices), 9)
 }

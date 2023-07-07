@@ -167,12 +167,49 @@ func (s *Storage) DeleteEvent(ctx context.Context, eventID string) error {
 	return nil
 }
 
-func (s *Storage) ListEvents(ctx context.Context, from, to time.Time, userID string) ([]*storage.Event, error) {
+func (s *Storage) ListEventsUser(ctx context.Context, from, to time.Time, userID string) ([]*storage.Event, error) {
 	query := `SELECT event_id, title, description, 
                     date_time_start, date_time_end, date_time_notice, user_id 
 			  FROM events
 			  WHERE user_id=? AND date_time_start>=? AND date_time_start<=?`
 	rows, err := s.db.QueryContext(ctx, query, userID, s.truncateTime(from), s.truncateTime(to))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var events []*storage.Event
+	for rows.Next() {
+		var event storage.Event
+		var description sql.NullString
+		err := rows.Scan(
+			&event.ID,
+			&event.Title,
+			&description,
+			&event.DateTimeStart,
+			&event.DateTimeEnd,
+			&event.DateTimeNotice,
+			&event.UserID,
+		)
+		if err != nil {
+			return nil, err
+		}
+		event.Description = description.String
+		events = append(events, &event)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return events, nil
+}
+
+func (s *Storage) ListEvents(ctx context.Context, from, to time.Time) ([]*storage.Event, error) {
+	query := `SELECT event_id, title, description, 
+                    date_time_start, date_time_end, date_time_notice, user_id 
+			  FROM events
+			  WHERE date_time_start>=? AND date_time_start<=?`
+	rows, err := s.db.QueryContext(ctx, query, s.truncateTime(from), s.truncateTime(to))
 	if err != nil {
 		return nil, err
 	}

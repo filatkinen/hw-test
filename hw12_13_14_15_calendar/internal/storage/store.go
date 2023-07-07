@@ -18,7 +18,8 @@ type Store interface {
 	ChangeEvent(ctx context.Context, event *Event) error
 	DeleteEvent(ctx context.Context, eventID string) error
 	GetEvent(ctx context.Context, eventID string) (*Event, error)
-	ListEvents(ctx context.Context, from time.Time, to time.Time, userID string) ([]*Event, error)
+	ListEventsUser(ctx context.Context, from time.Time, to time.Time, userID string) ([]*Event, error)
+	ListEvents(ctx context.Context, from time.Time, to time.Time) ([]*Event, error)
 	ListNoticesToSend(ctx context.Context, onTime time.Time) ([]*Notice, error)
 	GetLastNoticeTimeSetNew(ctx context.Context, lastCheck time.Time) (*time.Time, error)
 	CountEvents(ctx context.Context, userID string) (int, error)

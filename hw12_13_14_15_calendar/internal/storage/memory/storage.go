@@ -67,7 +67,7 @@ func (s *Storage) DeleteEvent(_ context.Context, eventID string) error {
 	return storage.ErrEventIDNotFound
 }
 
-func (s *Storage) ListEvents(_ context.Context, from, to time.Time, userID string) ([]*storage.Event, error) {
+func (s *Storage) ListEventsUser(_ context.Context, from, to time.Time, userID string) ([]*storage.Event, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var events []*storage.Event
@@ -75,6 +75,19 @@ func (s *Storage) ListEvents(_ context.Context, from, to time.Time, userID strin
 		if s.events[i].UserID == userID &&
 			(s.events[i].DateTimeStart.Equal(from) || s.events[i].DateTimeStart.Equal(to) ||
 				(s.events[i].DateTimeStart.After(from) && s.events[i].DateTimeStart.Before(to))) {
+			events = append(events, s.events[i])
+		}
+	}
+	return events, nil
+}
+
+func (s *Storage) ListEvents(_ context.Context, from, to time.Time) ([]*storage.Event, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var events []*storage.Event
+	for i := range s.events {
+		if s.events[i].DateTimeStart.Equal(from) || s.events[i].DateTimeStart.Equal(to) ||
+			(s.events[i].DateTimeStart.After(from) && s.events[i].DateTimeStart.Before(to)) {
 			events = append(events, s.events[i])
 		}
 	}

@@ -185,14 +185,39 @@ func (s *ServiceCalendar) ListEventsMonth(timestamp *timestamppb.Timestamp,
 	return nil
 }
 
-func (s *ServiceCalendar) GetNoticesToSend(_ *timestamppb.Timestamp,
-	_ pb.CalendarEvents_GetNoticesToSendServer,
+func (s *ServiceCalendar) GetNoticesToSend(timestamp *timestamppb.Timestamp,
+	sendServer pb.CalendarEvents_GetNoticesToSendServer,
 ) error {
+	notices, err := s.app.ListNoticesToSend(sendServer.Context(), timestamp.AsTime())
+	if err != nil {
+		return errorMessage(err, "Error getting list of notices", "")
+	}
+	for i := range notices {
+		err := sendServer.Send(common.FromNoticeToPB(notices[i]))
+		if err != nil {
+			return errorMessage(err, "Error sending notice", notices[i].ID)
+		}
+	}
 	return nil
 }
 
-func (s *ServiceCalendar) GetNoticesToDelete(_ *timestamppb.Timestamp,
-	_ pb.CalendarEvents_GetNoticesToDeleteServer,
+func (s *ServiceCalendar) GetNoticesToDelete(timestamp *timestamppb.Timestamp,
+	deleteServer pb.CalendarEvents_GetNoticesToDeleteServer,
 ) error {
+	events, err := s.app.GetEventsToDelete(deleteServer.Context(), timestamp.AsTime())
+	if err != nil {
+		return errorMessage(err, "Error getting events to delete", "")
+	}
+	for i := range events {
+		err := deleteServer.Send(&pb.Notice{
+			Id:            events[i].ID,
+			Title:         events[i].Title,
+			DateTimeStart: timestamppb.New(events[i].DateTimeStart),
+			UserId:        events[i].UserID,
+		})
+		if err != nil {
+			return errorMessage(err, "Error sending events to delete", events[i].ID)
+		}
+	}
 	return nil
 }

@@ -147,3 +147,45 @@ func (s *GrpcClientCalendar) ListEventsMonth(ctx context.Context,
 	}
 	return events, nil
 }
+
+func (s *GrpcClientCalendar) GetNoticesToSend(ctx context.Context,
+	onTime time.Time,
+) ([]*storage.Notice, error) {
+	var notices []*storage.Notice
+	listStream, err := s.client.GetNoticesToSend(ctx, timestamppb.New(onTime))
+	if err != nil {
+		return nil, err
+	}
+	for {
+		notice, err := listStream.Recv()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		notices = append(notices, common.FromPBToNotice(notice))
+	}
+	return notices, nil
+}
+
+func (s *GrpcClientCalendar) GetNoticesToDelete(ctx context.Context,
+	onTime time.Time,
+) ([]*storage.Notice, error) {
+	var notices []*storage.Notice
+	listStream, err := s.client.GetNoticesToDelete(ctx, timestamppb.New(onTime))
+	if err != nil {
+		return nil, err
+	}
+	for {
+		notice, err := listStream.Recv()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		notices = append(notices, common.FromPBToNotice(notice))
+	}
+	return notices, nil
+}

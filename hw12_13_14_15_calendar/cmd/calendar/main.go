@@ -1,3 +1,6 @@
+//go:generate protoc -I  ../../internal/grpcservice/ ../../internal/grpcservice/calendar.proto   --go_out=../../internal/grpcservice/
+//go:generate protoc -I  ../../internal/grpcservice/ ../../internal/grpcservice/calendar.proto   --go-grpc_out=require_unimplemented_servers=false:../../internal/grpcservice/
+
 package main
 
 import (

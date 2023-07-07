@@ -35,3 +35,21 @@ func FromEventToPB(event *storage.Event) *pb.Event {
 		UserId:         event.UserID,
 	}
 }
+
+func FromPBToNotice(event *pb.Notice) *storage.Notice {
+	return &storage.Notice{
+		ID:       event.Id,
+		Title:    event.Title,
+		DateTime: event.DateTimeStart.AsTime(),
+		UserID:   event.UserId,
+	}
+}
+
+func FromNoticeToPB(event *storage.Notice) *pb.Notice {
+	return &pb.Notice{
+		Id:            event.ID,
+		Title:         event.Title,
+		DateTimeStart: timestamppb.New(event.DateTime),
+		UserId:        event.UserID,
+	}
+}

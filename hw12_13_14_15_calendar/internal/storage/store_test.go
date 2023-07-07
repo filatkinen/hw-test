@@ -89,7 +89,7 @@ func runTestStorage(t *testing.T, ctx context.Context, store storage.Store) { //
 			idevents[v.ID] = true
 		}
 
-		ev, err := store.ListEvents(ctx, timeNow, timeNow.Add(time.Second*30), UserID)
+		ev, err := store.ListEventsUser(ctx, timeNow, timeNow.Add(time.Second*30), UserID)
 		require.Nil(t, err)
 		require.NotNil(t, ev)
 		for i := range events {

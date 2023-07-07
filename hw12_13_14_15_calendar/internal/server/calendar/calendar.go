@@ -132,23 +132,35 @@ func (a *App) DeleteEventUser(ctx context.Context, eventID string, userID string
 	return a.storage.DeleteEvent(ctx, eventID)
 }
 
-func (a *App) ListEvents(ctx context.Context, from, to time.Time, userID string) ([]*storage.Event, error) {
-	return a.storage.ListEvents(ctx, from, to, userID)
+func (a *App) ListEventsUser(ctx context.Context, from, to time.Time, userID string) ([]*storage.Event, error) {
+	return a.storage.ListEventsUser(ctx, from, to, userID)
+}
+
+func (a *App) ListEvents(ctx context.Context, from, to time.Time) ([]*storage.Event, error) {
+	return a.storage.ListEvents(ctx, from, to)
 }
 
 func (a *App) ListEventsDay(ctx context.Context, date time.Time, userID string) ([]*storage.Event, error) {
 	from, to := datesDay(date)
-	return a.storage.ListEvents(ctx, from, to, userID)
+	return a.storage.ListEventsUser(ctx, from, to, userID)
 }
 
 func (a *App) ListEventsWeek(ctx context.Context, date time.Time, userID string) ([]*storage.Event, error) {
 	from, to := datesWeek(date)
-	return a.storage.ListEvents(ctx, from, to, userID)
+	return a.storage.ListEventsUser(ctx, from, to, userID)
 }
 
 func (a *App) ListEventsMonth(ctx context.Context, date time.Time, userID string) ([]*storage.Event, error) {
 	from, to := datesMonth(date)
-	return a.storage.ListEvents(ctx, from, to, userID)
+	return a.storage.ListEventsUser(ctx, from, to, userID)
+}
+
+func (a *App) GetEventsToDelete(ctx context.Context, onTime time.Time) ([]*storage.Event, error) {
+	return a.storage.ListEvents(ctx, storage.FistTimeCheckNotice, onTime.Add(-time.Hour*24*365))
+}
+
+func (a *App) ListNoticesToSend(ctx context.Context, onTime time.Time) ([]*storage.Notice, error) {
+	return a.storage.ListNoticesToSend(ctx, onTime)
 }
 
 func datesDay(t time.Time) (from time.Time, to time.Time) {
