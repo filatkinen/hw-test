@@ -1,0 +1,17 @@
+logger:
+  loglevel: INFO
+  # if logfile empty, or it cannot be created, service logs to the console.
+  logfile:
+
+rabbit:
+  port: 5672
+  address: calendar-rabbit
+  queue: queue-notice
+  topic: notice
+
+
+#due security reasons, service gets username and password for database from env settings
+env:
+  rabbituser: RABBIT_USER
+  rabbitpass: RABBIT_PASS
+

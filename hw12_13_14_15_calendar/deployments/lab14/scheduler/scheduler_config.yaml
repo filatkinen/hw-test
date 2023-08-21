@@ -1,0 +1,35 @@
+storage:
+  #type memory / pgsql / mysql
+  type: pgsql
+
+
+logger:
+  loglevel: INFO
+  # if logfile empty, or it cannot be created, service logs to the console.
+  logfile:
+
+rabbit:
+  port: 5672
+  address: calendar-rabbit
+  queue: queue-notice
+  checkinterval: 2s
+
+#if storage type=memory following line are omitted
+
+#due security reasons, service gets username and password for database from env settings
+
+
+env:
+  dbuser: CALENDAR_DB_USER
+  dbpass: CALENDAR_DB_PASS
+
+  rabbituser: RABBIT_USER
+  rabbitpass: RABBIT_PASS
+
+db:
+  port: 5432
+  address: calendar-pgsql
+  db: calendar
+  maxopenconns: 5 #10 default
+  maxidleconns: 5 #10 default
+  maxidletime: 5m # 15m default value if omitted. f.e: 1h5m10s, 10m...

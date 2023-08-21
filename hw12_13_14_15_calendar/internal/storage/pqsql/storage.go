@@ -64,7 +64,7 @@ func (s *Storage) GetLastNoticeTimeSetNew(ctx context.Context, onTime time.Time)
 	ORDER BY last_check_date_time DESC
 	LIMIT 1`
 
-	err = tx.QueryRowContext(ctx, query).Scan(lastCheck)
+	err = tx.QueryRowContext(ctx, query).Scan(&lastCheck)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		*lastCheck = storage.FistTimeCheckNotice
