@@ -2,7 +2,6 @@ package consumer
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/filatkinen/hw-test/hw12_13_14_15_calendar/internal/config/sender"
 	"github.com/filatkinen/hw-test/hw12_13_14_15_calendar/internal/logger"
@@ -75,11 +74,11 @@ func NewConsumer(config sender.Config, log *logger.Logger) (*Comsumer, error) {
 	return &c, nil
 }
 
-func (c *Comsumer) Start() {
+func (c *Comsumer) Start(f func([]byte)) {
 	c.log.Logging(logger.LevelInfo, "Starting Noticer")
 	go func() {
 		for d := range c.chMsg {
-			c.SendMessage(d.Body)
+			f(d.Body)
 		}
 	}()
 	<-c.chExit
@@ -103,14 +102,4 @@ func (c *Comsumer) Close() (err error) {
 		}
 	}
 	return err
-}
-
-func (c *Comsumer) SendMessage(message []byte) {
-	notice, err := rabbit.Deserialize(message)
-	if err != nil {
-		c.log.Error(fmt.Sprintf("Error while deserialosing message: %s", err))
-		return
-	}
-	c.log.Logging(logger.LevelInfo, fmt.Sprintf("Got message from rabbit and log it. EventID:%s DateTimeStart:%s",
-		notice.ID, notice.DateTime))
 }

@@ -7,10 +7,8 @@ import (
 	"time"
 
 	"github.com/filatkinen/hw-test/hw12_13_14_15_calendar/internal/config/scheduler"
-	"github.com/filatkinen/hw-test/hw12_13_14_15_calendar/internal/config/server"
 	"github.com/filatkinen/hw-test/hw12_13_14_15_calendar/internal/logger"
 	"github.com/filatkinen/hw-test/hw12_13_14_15_calendar/internal/rabbit"
-	"github.com/filatkinen/hw-test/hw12_13_14_15_calendar/internal/server/calendar"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -20,21 +18,11 @@ type Producer struct {
 	conn    *amqp.Connection
 	channel *amqp.Channel
 	queue   amqp.Queue
-	app     *calendar.App
 	chExit  chan struct{}
 }
 
 func NewProducer(config scheduler.Config, log *logger.Logger) (*Producer, error) {
 	p := Producer{log: log, config: config.Rabbit}
-	app, err := calendar.New(log, server.Config{
-		LogLevel:  config.LogLevel,
-		StoreType: config.StoreType,
-		DB:        config.DB,
-	})
-	if err != nil {
-		return nil, err
-	}
-	p.app = app
 
 	configAmpq := amqp.Config{
 		Vhost:      "/",
@@ -74,7 +62,7 @@ func NewProducer(config scheduler.Config, log *logger.Logger) (*Producer, error)
 	return &p, nil
 }
 
-func (p *Producer) Start() {
+func (p *Producer) Start(f func() [][]byte) {
 	p.log.Logging(logger.LevelInfo, "Starting Scheduller")
 	timer := time.NewTicker(p.config.CheckInterval)
 	defer timer.Stop()
@@ -83,8 +71,7 @@ func (p *Producer) Start() {
 		case <-p.chExit:
 			return
 		case <-timer.C:
-			p.DeleteOldEvents()
-			p.GetEventsAndSendMessages()
+			p.SendMessages(f())
 		}
 	}
 }
@@ -106,59 +93,31 @@ func (p *Producer) Close() (err error) {
 			err = errors.Join(err, e)
 		}
 	}
-	if p.app != nil {
-		if e := p.app.Close(context.Background()); e != nil {
-			err = errors.Join(err, e)
-		}
-	}
 	return err
 }
 
-func (p *Producer) DeleteOldEvents() {
-	ctx := context.Background()
-	events, err := p.app.GetEventsToDelete(ctx, time.Now().UTC())
-	if err != nil {
-		p.log.Error("Error while getting events to delete: " + err.Error())
-		return
-	}
-	for i := range events {
-		err = p.app.DeleteEvent(ctx, events[i].ID)
-		if err != nil {
-			p.log.Error("Error deleting event:" + err.Error())
-			continue
-		}
-		p.log.Logging(logger.LevelInfo,
-			fmt.Sprintf("Deleted old event:%s,  Time to start:%s:", events[i].ID, events[i].DateTimeStart))
-	}
-}
-
-func (p *Producer) GetEventsAndSendMessages() {
-	ctx := context.Background()
-	notices, err := p.app.ListNoticesToSend(ctx, time.Now().UTC())
-	if err != nil {
-		p.log.Error("Error while getting events to notice: " + err.Error())
-		return
-	}
-	for i := range notices {
-		b, err := rabbit.Serialize(*notices[i])
-		if err != nil {
-			p.log.Error("Error while serializing: " + err.Error())
-			return
-		}
-		err = p.channel.PublishWithContext(context.Background(),
+func (p *Producer) SendMessages(messages [][]byte) {
+	for i := range messages {
+		err := p.channel.PublishWithContext(context.Background(),
 			"",           // exchange
 			p.queue.Name, // routing key
 			false,        // mandatory
 			false,        // immediate
 			amqp.Publishing{
 				ContentType: "text/plain",
-				Body:        b,
+				Body:        messages[i],
 			})
 		if err != nil {
 			p.log.Error("Error publishing: " + err.Error())
 			return
 		}
+		var b []byte
+		if len(messages[i]) < 60 {
+			b = messages[i][:len(messages[i])]
+		} else {
+			b = messages[i][:60]
+		}
 		p.log.Logging(logger.LevelInfo,
-			fmt.Sprintf("Sending to the rabbit notice event:%s,  Time to start:%s:", notices[i].ID, notices[i].DateTime))
+			fmt.Sprintf("Sending to the rabbit notice event. First 60 symbols of message:%s:", string(b)))
 	}
 }

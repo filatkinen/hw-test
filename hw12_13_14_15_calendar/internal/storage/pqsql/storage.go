@@ -284,6 +284,20 @@ func (s *Storage) ListNoticesToSend(ctx context.Context, onTime time.Time) ([]*s
 	return notices, nil
 }
 
+func (s *Storage) DeleteOldEvents(ctx context.Context, onTime time.Time) (int, error) {
+	query := `DELETE FROM events 
+              WHERE date_time_start<$1`
+	result, err := s.db.ExecContext(ctx, query, onTime)
+	if err != nil {
+		return 0, err
+	}
+	rowsCount, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	return int(rowsCount), err
+}
+
 func (s *Storage) CountEvents(ctx context.Context, userID string) (int, error) {
 	query := `SELECT COUNT(*) AS count FROM events WHERE user_id=$1`
 	var count int

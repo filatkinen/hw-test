@@ -114,6 +114,19 @@ func (s *Storage) ListNoticesToSend(_ context.Context, onTime time.Time) ([]*sto
 	return notice, nil
 }
 
+func (s *Storage) DeleteOldEvents(_ context.Context, onTime time.Time) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var count int
+	for i := range s.events {
+		if s.events[i].DateTimeStart.Before(onTime) {
+			s.events = append(s.events[:i], s.events[i+1:]...)
+			count++
+		}
+	}
+	return count, nil
+}
+
 func (s *Storage) CountEvents(_ context.Context, userID string) (int, error) {
 	count := 0
 	for i := range s.events {

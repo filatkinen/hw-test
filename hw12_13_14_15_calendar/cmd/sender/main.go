@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"github.com/filatkinen/hw-test/hw12_13_14_15_calendar/internal/config/sender"
 	"github.com/filatkinen/hw-test/hw12_13_14_15_calendar/internal/logger"
 	"github.com/filatkinen/hw-test/hw12_13_14_15_calendar/internal/rabbit/consumer"
+	"github.com/filatkinen/hw-test/hw12_13_14_15_calendar/internal/storage"
 )
 
 var configFile string
@@ -54,8 +56,19 @@ func main() {
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
+	dofunc := func(message []byte) {
+		var notice storage.Notice
+		err := json.Unmarshal(message, &notice)
+		if err != nil {
+			l.Error(fmt.Sprintf("Error while deserialosing message: %s", err))
+			return
+		}
+		l.Logging(logger.LevelInfo, fmt.Sprintf("Got message from rabbit and log it. EventID:%s DateTimeStart:%s",
+			notice.ID, notice.DateTime))
+	}
+
 	go func() {
-		senderer.Start()
+		senderer.Start(dofunc)
 	}()
 
 	<-signalCh
