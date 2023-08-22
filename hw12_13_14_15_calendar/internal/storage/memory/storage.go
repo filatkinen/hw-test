@@ -22,18 +22,20 @@ func New() *Storage {
 	}
 }
 
-func (s *Storage) AddEvent(_ context.Context, event *storage.Event) error {
+func (s *Storage) AddEvent(_ context.Context, event *storage.Event, userID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.events = append(s.events, event)
+	ev := *event
+	ev.UserID = userID
+	s.events = append(s.events, &ev)
 	return nil
 }
 
-func (s *Storage) GetEvent(_ context.Context, id string) (*storage.Event, error) {
+func (s *Storage) GetEvent(_ context.Context, eventID string) (*storage.Event, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for i := range s.events {
-		if s.events[i].ID == id {
+		if s.events[i].ID == eventID {
 			ev := *s.events[i]
 			return &ev, nil
 		}
@@ -53,16 +55,30 @@ func (s *Storage) ChangeEvent(_ context.Context, event *storage.Event) error {
 	return storage.ErrEventIDNotFound
 }
 
-func (s *Storage) DeleteEvent(_ context.Context, id string) error {
+func (s *Storage) DeleteEvent(_ context.Context, eventID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for i := range s.events {
-		if s.events[i].ID == id {
+		if s.events[i].ID == eventID {
 			s.events = append(s.events[:i], s.events[i+1:]...)
 			return nil
 		}
 	}
 	return storage.ErrEventIDNotFound
+}
+
+func (s *Storage) ListEventsUser(_ context.Context, from, to time.Time, userID string) ([]*storage.Event, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var events []*storage.Event
+	for i := range s.events {
+		if s.events[i].UserID == userID &&
+			(s.events[i].DateTimeStart.Equal(from) || s.events[i].DateTimeStart.Equal(to) ||
+				(s.events[i].DateTimeStart.After(from) && s.events[i].DateTimeStart.Before(to))) {
+			events = append(events, s.events[i])
+		}
+	}
+	return events, nil
 }
 
 func (s *Storage) ListEvents(_ context.Context, from, to time.Time) ([]*storage.Event, error) {
@@ -98,8 +114,14 @@ func (s *Storage) ListNoticesToSend(_ context.Context, onTime time.Time) ([]*sto
 	return notice, nil
 }
 
-func (s *Storage) CountEvents(_ context.Context) (int, error) {
-	return len(s.events), nil
+func (s *Storage) CountEvents(_ context.Context, userID string) (int, error) {
+	count := 0
+	for i := range s.events {
+		if s.events[i].UserID == userID {
+			count++
+		}
+	}
+	return count, nil
 }
 
 func (s *Storage) GetLastNoticeTimeSetNew(_ context.Context, onTime time.Time) (*time.Time, error) {

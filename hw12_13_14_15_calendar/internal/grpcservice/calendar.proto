@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+
+package calendar;
+
+option go_package = "/calendar";
+
+service CalendarEvents {
+  rpc addEvent(Event) returns (EventID);
+  rpc getEvent(EventID) returns (Event);
+  rpc changeEvent(Event) returns (google.protobuf.BoolValue);
+  rpc deleteEvent(EventID) returns (google.protobuf.BoolValue);
+  rpc listEventsDay(google.protobuf.Timestamp) returns (stream Event);
+  rpc listEventsWeek(google.protobuf.Timestamp) returns (stream Event);
+  rpc listEventsMonth(google.protobuf.Timestamp) returns (stream Event);
+  rpc getNoticesToSend(google.protobuf.Timestamp) returns (stream Notice);
+  rpc getNoticesToDelete(google.protobuf.Timestamp) returns (stream Notice);
+}
+
+message Event {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  google.protobuf.Timestamp   date_time_start = 4;
+  google.protobuf.Timestamp   date_time_end = 5;
+  google.protobuf.Timestamp   date_time_notice = 6;
+  string user_id = 7;
+}
+
+message EventID {
+  string id = 1;
+}
+
+message Notice {
+  string id = 1;
+  string title = 2;
+  google.protobuf.Timestamp   date_time_start = 3;
+  string user_id = 4;
+}

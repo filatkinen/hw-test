@@ -1,3 +1,6 @@
+//go:generate protoc -I  ../../internal/grpcservice/ ../../internal/grpcservice/calendar.proto   --go_out=../../internal/grpcservice/
+//go:generate protoc -I  ../../internal/grpcservice/ ../../internal/grpcservice/calendar.proto   --go-grpc_out=require_unimplemented_servers=false:../../internal/grpcservice/
+
 package main
 
 import (
@@ -64,7 +67,7 @@ func main() {
 	signalFailedStart := make(chan struct{})
 	go func() {
 		if err := serv.Start(); err != nil {
-			l.Error("failed to start http server: " + err.Error())
+			l.Error("failed to start server: " + err.Error())
 		}
 		signalFailedStart <- struct{}{}
 	}()

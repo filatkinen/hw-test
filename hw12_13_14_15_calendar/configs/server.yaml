@@ -4,6 +4,7 @@ storage:
 
 bindings:
   port: 8800
+  grpcport: 50051
   address: 0.0.0.0 # 0.0.0.0 - all interfaces / ip address for binding
 
 logger:
@@ -13,7 +14,7 @@ logger:
 
 service:
   #if logfile is empty or destination is not accessible service does logging into the current directory
-  logfile: /tmp/calendar01.log
+  logfile: /root/calendar01.log
 
 
 #if storage type=memory following line are omitted
@@ -29,4 +30,4 @@ db:
   db: calendar
   maxopenconns: 5 #10 default
   maxidleconns: 5 #10 default
-  maxidletime: 5m- # 15m default value if omitted. f.e: 1h5m10s, 10m...
+  maxidletime: 5m # 15m default value if omitted. f.e: 1h5m10s, 10m...
