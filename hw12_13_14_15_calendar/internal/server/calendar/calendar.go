@@ -156,7 +156,11 @@ func (a *App) ListEventsMonth(ctx context.Context, date time.Time, userID string
 }
 
 func (a *App) GetEventsToDelete(ctx context.Context, onTime time.Time) ([]*storage.Event, error) {
-	return a.storage.ListEvents(ctx, storage.FistTimeCheckNotice, onTime.Add(-time.Hour*24*365))
+	return a.storage.ListEvents(ctx, storage.FistTimeCheckNotice, onTime.Add(-time.Hour*24*365).UTC())
+}
+
+func (a *App) DeleteOldEvents(ctx context.Context, onTime time.Time) (int, error) {
+	return a.storage.DeleteOldEvents(ctx, onTime.Add(-time.Hour*24*365).UTC())
 }
 
 func (a *App) ListNoticesToSend(ctx context.Context, onTime time.Time) ([]*storage.Notice, error) {

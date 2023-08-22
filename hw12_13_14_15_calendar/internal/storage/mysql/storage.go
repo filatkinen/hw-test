@@ -65,7 +65,7 @@ func (s *Storage) GetLastNoticeTimeSetNew(ctx context.Context, onTime time.Time)
 	ORDER BY last_check_date_time DESC
 	LIMIT 1`
 
-	err = tx.QueryRowContext(ctx, query).Scan(lastCheck)
+	err = tx.QueryRowContext(ctx, query).Scan(&lastCheck)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		*lastCheck = storage.FistTimeCheckNotice
@@ -283,6 +283,20 @@ func (s *Storage) ListNoticesToSend(ctx context.Context, onTime time.Time) ([]*s
 		return nil, err
 	}
 	return notices, nil
+}
+
+func (s *Storage) DeleteOldEvents(ctx context.Context, onTime time.Time) (int, error) {
+	query := `DELETE FROM events 
+              WHERE date_time_start<?`
+	result, err := s.db.ExecContext(ctx, query, onTime)
+	if err != nil {
+		return 0, err
+	}
+	rowsCount, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	return int(rowsCount), err
 }
 
 func (s *Storage) CountEvents(ctx context.Context, userID string) (int, error) {

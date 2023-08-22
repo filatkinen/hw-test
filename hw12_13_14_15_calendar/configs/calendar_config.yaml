@@ -1,6 +1,6 @@
 storage:
   #type memory / pgsql / mysql
-  type: memory
+  type: pgsql
 
 bindings:
   port: 8800
@@ -25,7 +25,7 @@ env:
   dbpass: CALENDAR_DB_PASS
 
 db:
-  port: 3306
+  port: 5432
   address: localhost
   db: calendar
   maxopenconns: 5 #10 default

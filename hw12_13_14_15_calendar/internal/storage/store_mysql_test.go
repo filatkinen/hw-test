@@ -16,7 +16,7 @@ import (
 func TestMysqlStorage(t *testing.T) {
 	_ = os.Setenv("CALENDAR_DB_USER", "calendar")
 	_ = os.Setenv("CALENDAR_DB_PASS", "pass")
-	conf, err := server.NewConfig("../../configs/server.yaml")
+	conf, err := server.NewConfig("../../configs/calendar_config.yaml")
 	if err != nil {
 		log.Fatalf("error reading config file %v", err)
 	}
