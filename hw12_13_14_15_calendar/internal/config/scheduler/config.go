@@ -53,6 +53,7 @@ func NewConfig(in string) (Config, error) {
 		Rabbit: rabbit.Config{
 			Port:          viper.GetString("rabbit.port"),
 			Address:       viper.GetString("rabbit.address"),
+			ExchangeName:  viper.GetString("rabbit.exchange"),
 			User:          os.Getenv(viper.GetString("env.rabbituser")),
 			Password:      os.Getenv(viper.GetString("env.rabbitpass")),
 			Queue:         viper.GetString("rabbit.queue"),

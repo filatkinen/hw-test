@@ -17,6 +17,7 @@ type Config struct {
 	Queue         string
 	CheckInterval time.Duration
 	Tag           string
+	ExchangeName  string
 }
 
 func (r Config) GetDSN() string {

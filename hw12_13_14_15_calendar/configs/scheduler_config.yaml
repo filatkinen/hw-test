@@ -12,6 +12,7 @@ rabbit:
   port: 5672
   address: localhost
   queue: queue-notice
+  exchange: calendar-exchange
   checkinterval: 2s
 
 #if storage type=memory following line are omitted

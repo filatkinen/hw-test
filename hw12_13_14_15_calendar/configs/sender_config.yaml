@@ -7,6 +7,7 @@ rabbit:
   port: 5672
   address: localhost
   queue: queue-notice
+  exchange: calendar-exchange
   topic: notice
 
 

@@ -17,7 +17,6 @@ type Producer struct {
 	config  rabbit.Config
 	conn    *amqp.Connection
 	channel *amqp.Channel
-	queue   amqp.Queue
 	chExit  chan struct{}
 }
 
@@ -44,19 +43,21 @@ func NewProducer(config scheduler.Config, log *logger.Logger) (*Producer, error)
 	}
 	p.channel = channel
 
-	queue, err := channel.QueueDeclare(
-		config.Rabbit.Queue, // name of the queue
-		true,                // durable
-		false,               // delete when unused
-		false,               // exclusive
-		false,               // noWait
-		nil,                 // arguments
+	err = channel.ExchangeDeclare(
+		config.Rabbit.ExchangeName, // name
+		"fanout",                   // type
+		true,                       // durable
+		false,                      // auto-deleted
+		false,                      // internal
+		false,                      // no-wait
+		nil,                        // arguments
 	)
 	if err != nil {
 		e := p.Close()
 		return nil, errors.Join(err, e)
 	}
-	p.queue = queue
+	p.channel = channel
+
 	p.chExit = make(chan struct{})
 
 	return &p, nil
@@ -99,10 +100,10 @@ func (p *Producer) Close() (err error) {
 func (p *Producer) SendMessages(messages [][]byte) {
 	for i := range messages {
 		err := p.channel.PublishWithContext(context.Background(),
-			"",           // exchange
-			p.queue.Name, // routing key
-			false,        // mandatory
-			false,        // immediate
+			p.config.ExchangeName, // exchange
+			"",                    // routing key
+			false,                 // mandatory
+			false,                 // immediate
 			amqp.Publishing{
 				ContentType: "text/plain",
 				Body:        messages[i],
