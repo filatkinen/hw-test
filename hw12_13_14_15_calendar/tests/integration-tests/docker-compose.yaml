@@ -1,0 +1,127 @@
+version: '3'
+
+services:
+
+  pgsql:
+    build:
+      context: ../../
+      dockerfile: ./tests/integration-tests/pgsql/Dockerfile
+    container_name: calendar-pgsql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - local
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: calendar-rabbit
+    container_name: calendar-rabbit
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 5s
+      timeout: 5s
+      retries: 5
+#    restart: always
+    environment:
+      - RABBITMQ_DEFAULT_USER=rmuser
+      - RABBITMQ_DEFAULT_PASS=rmpass
+#   ports:
+#      - 15672:15672
+#      - 5672:5672
+    expose:
+       - 5672
+    networks:
+      - local
+
+  calendar:
+    build:
+      context: ../../
+      dockerfile: ./tests/integration-tests/calendar/Dockerfile
+    container_name: calendar-app
+    depends_on:
+       pgsql:
+          condition: service_healthy
+    restart: always
+    tty: true
+    stdin_open: true
+    ports:
+      - "8800:8800"
+    networks:
+      - local
+    environment:
+      - CALENDAR_DB_USER=calendar
+      - CALENDAR_DB_PASS=pass
+
+
+  scheduler:
+    build:
+      context: ../../
+      dockerfile: ./tests/integration-tests/scheduler/Dockerfile
+    container_name: calendar-scheduler
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+    tty: true
+    stdin_open: true
+    networks:
+      - local
+    environment:
+      - CALENDAR_DB_USER=calendar
+      - CALENDAR_DB_PASS=pass
+      - RABBIT_USER=rmuser
+      - RABBIT_PASS=rmpass
+
+  sender:
+    build:
+      context: ../../
+      dockerfile: ./tests/integration-tests/sender/Dockerfile
+    container_name: calendar-sender
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+    tty: true
+    stdin_open: true
+    networks:
+      - local
+    environment:
+      - RABBIT_USER=rmuser
+      - RABBIT_PASS=rmpass
+
+  integration:
+    build:
+      context: ../../
+      dockerfile: ./tests/integration-tests/tests/Dockerfile
+    container_name: calendar-integration
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+    tty: true
+    stdin_open: true
+    networks:
+      - local
+    environment:
+      - DB_USER=calendar
+      - DB_PASS=pass
+      - DB_HOST=calendar-pgsql
+      - DB_PORT=5432
+      - DB_NAME=calendar
+      - S_HOST=calendar-app
+      - S_PORT=8800
+      - R_USER=rmuser
+      - R_PASS=rmpass
+      - R_HOST=calendar-rabbit
+      - R_PORT=5672
+      - E_EXCHANGE=calendar-exchange
+  
+networks:
+  local:

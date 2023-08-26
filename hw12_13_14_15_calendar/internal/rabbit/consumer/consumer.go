@@ -42,19 +42,46 @@ func NewConsumer(config sender.Config, log *logger.Logger) (*Comsumer, error) {
 	}
 	c.channel = channel
 
+	err = channel.ExchangeDeclare(
+		config.Rabbit.ExchangeName, // name
+		"fanout",                   // type
+		true,                       // durable
+		false,                      // auto-deleted
+		false,                      // internal
+		false,                      // no-wait
+		nil,                        // arguments
+	)
+	if err != nil {
+		e := c.Close()
+		return nil, errors.Join(err, e)
+	}
+
 	queue, err := channel.QueueDeclare(
-		config.Rabbit.Queue, // name of the queue
-		true,                // durable
-		false,               // delete when unused
-		false,               // exclusive
-		false,               // noWait
-		nil,                 // arguments
+		"",    // name of the queue
+		false, // durable
+		false, // delete when unused
+		true,  // exclusive
+		false, // noWait
+		nil,   // arguments
 	)
 	if err != nil {
 		e := c.Close()
 		return nil, errors.Join(err, e)
 	}
 	c.queue = queue
+
+	err = channel.QueueBind(
+		queue.Name,                 // queue name
+		"",                         // routing key
+		config.Rabbit.ExchangeName, // exchange
+		false,
+		nil,
+	)
+	if err != nil {
+		e := c.Close()
+		return nil, errors.Join(err, e)
+	}
+
 	c.chExit = make(chan struct{})
 
 	msgs, err := c.channel.Consume(

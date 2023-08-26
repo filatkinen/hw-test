@@ -13,13 +13,32 @@ run: build
 	$(BIN) -config ./configs/server.yaml
 
 build-img:
-	docker build \
-		--build-arg=LDFLAGS="$(LDFLAGS)" \
-		-t $(DOCKER_IMG) \
-		-f build/Dockerfile .
+	docker-compose -f tests/integration-tests/docker-compose.yaml build
 
 run-img: build-img
-	docker run $(DOCKER_IMG)
+	docker-compose -f tests/integration-tests/docker-compose.yaml up -d
+
+
+up: run-img
+
+down:
+	docker-compose -f tests/integration-tests/docker-compose.yaml down \
+		 --rmi local \
+		--volumes \
+		--remove-orphans \
+		--timeout 60; \
+
+
+integration-tests: run-img
+	test_status_code=0 ;\
+	docker exec -it calendar-integration go test -v --count=1  ./tests/integration-tests/tests/ -tags integration || test_status_code=$$? ;\
+	docker-compose -f tests/integration-tests/docker-compose.yaml down \
+	   --rmi local \
+       --volumes \
+       --remove-orphans \
+       --timeout 60 ;\
+	exit $$test_status_code ;
+
 
 version: build
 	$(BIN) version
